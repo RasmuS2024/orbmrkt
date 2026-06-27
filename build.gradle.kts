@@ -1,20 +1,33 @@
 plugins {
-    id("java")
+    java
+    id("org.springframework.boot") version "3.5.13" apply false
+    id("io.spring.dependency-management") version "1.1.7" apply false
 }
 
-group = "OrbitaMarket"
-version = "1.0-SNAPSHOT"
+allprojects {
+    group = "orbmrkt"
+    version = "1.0-SNAPSHOT"
 
-repositories {
-    mavenCentral()
+    repositories {
+        mavenCentral()
+    }
 }
 
-dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
+subprojects {
+    apply(plugin = "java")
+    apply(plugin = "io.spring.dependency-management")
 
-tasks.test {
-    useJUnitPlatform()
+    java {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+
+    dependencies {
+        compileOnly("org.projectlombok:lombok")
+        annotationProcessor("org.projectlombok:lombok")
+    }
+
+    tasks.withType<JavaCompile>().configureEach {
+        options.encoding = "UTF-8"
+    }
 }

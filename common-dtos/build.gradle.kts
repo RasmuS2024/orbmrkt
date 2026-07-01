@@ -1,6 +1,4 @@
-plugins {
-    id("org.springframework.boot")
-}
 
 dependencies {
+    implementation("com.fasterxml.jackson.core:jackson-annotations")
 }

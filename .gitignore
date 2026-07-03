@@ -5,11 +5,27 @@ build/
 !**/src/test/**/build/
 .kotlin
 
+### Environment ###
+.env
+
+### JVM ###
+hs_err_pid*
+
+### Logs ###
+*.log
+
+### Docker ###
+docker-compose.override.yml
+data/
+
+### Gradle ###
+gradle-app.setting
+
+### Windows ###
+Thumbs.db
+
 ### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
+.idea/
 *.iws
 *.iml
 *.ipr

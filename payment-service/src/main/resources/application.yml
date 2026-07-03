@@ -1,0 +1,41 @@
+server:
+  port: 8082
+
+spring:
+  datasource:
+    url: jdbc:postgresql://payment-service-db:5432/${PAYMENT_SERVICE_DB_NAME:orbmrkt_payments}
+    username: ${PAYMENT_SERVICE_DB_USER:postgres}
+    password: ${PAYMENT_SERVICE_DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: payment-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "orbmrkt.dto"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+outbox:
+  polling-interval-ms: 500
+  batch-size: 100
+  max-attempts: 5
+  cleanup-days: 7
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

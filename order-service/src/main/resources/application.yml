@@ -3,9 +3,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/orbmrkt_orders
-    username: postgres
-    password: postgres
+    url: jdbc:postgresql://order-service-db:5432/${ORDER_SERVICE_DB_NAME:orbmrkt_orders}
+    username: ${ORDER_SERVICE_DB_USER:postgres}
+    password: ${ORDER_SERVICE_DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -17,7 +17,7 @@ spring:
         format_sql: true
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: kafka:9092
     consumer:
       group-id: order-service
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -27,3 +27,15 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+outbox:
+  polling-interval-ms: 500
+  batch-size: 100
+  max-attempts: 5
+  cleanup-days: 7
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

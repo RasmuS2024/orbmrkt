@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstпructor
+@NoArgsConstructor
 @AllArgsConstructor
 public class BalanceResponse {
     @JsonProperty("user_id")

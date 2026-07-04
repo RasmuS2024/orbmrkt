@@ -55,7 +55,7 @@ class PaymentsIntegrationTest {
     @Autowired
     private ProcessedPaymentRepository processedPaymentRepository;
 
-    private static final String USER_ID = "test-user-1";
+    private String userId;
 
     @DynamicPropertySource
     static void overrideProperties(DynamicPropertyRegistry registry) {
@@ -68,11 +68,12 @@ class PaymentsIntegrationTest {
     void setUp() {
         processedPaymentRepository.deleteAll();
         accountRepository.deleteAll();
+        userId = UUID.randomUUID().toString();
     }
 
     private HttpHeaders headers() {
         HttpHeaders h = new HttpHeaders();
-        h.set("X-User-Id", USER_ID);
+        h.set("X-User-Id", userId);
         h.setContentType(MediaType.APPLICATION_JSON);
         return h;
     }
@@ -108,7 +109,7 @@ class PaymentsIntegrationTest {
         var event = new OrderPaymentRequested();
         event.setEventId(UUID.randomUUID());
         event.setOrderId(orderId);
-        event.setUserId(USER_ID);
+        event.setUserId(userId);
         event.setAmount(BigDecimal.valueOf(amount));
         event.setOccurredAt(Instant.now());
         kafka.send("order.payment.requested", event);

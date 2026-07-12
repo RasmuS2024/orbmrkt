@@ -40,11 +40,6 @@ public class OrderService {
 
         String validationError = validateOrder(request);
         if (validationError != null) {
-            String message = switch (validationError) {
-                case "INVALID_PRICE" -> "Price must be greater than 0";
-                case "UNKNOWN_PRODUCT_TYPE" -> "Unsupported product type";
-                default -> "Missing required fields in payload";
-            };
             OrderEntity order = new OrderEntity();
             order.setUserId(userId);
             order.setProductType(request.getProductType() != null
@@ -55,7 +50,12 @@ public class OrderService {
             order.setStatus(OrderStatus.REJECTED.name());
             order.setFailureReason(validationError);
             repository.save(order);
-            throw new OrderException(HttpStatus.BAD_REQUEST, validationError, message);
+            String msg = switch (validationError) {
+                case "INVALID_PRICE" -> "Price must be greater than 0";
+                case "UNKNOWN_PRODUCT_TYPE" -> "Unsupported product type";
+                default -> "Missing required fields in payload";
+            };
+            throw new OrderException(HttpStatus.BAD_REQUEST, validationError, msg);
         }
 
         OrderEntity order = new OrderEntity();

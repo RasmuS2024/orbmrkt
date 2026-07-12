@@ -27,7 +27,8 @@ public class OrderEventPublisher {
 
         try {
             String payload = objectMapper.writeValueAsString(event);
-            OutboxEntity outbox = new OutboxEntity(event.getEventId(), TOPIC_PAYMENT_REQUESTED, payload, event.getClass().getName());
+            OutboxEntity outbox = new OutboxEntity(event.getEventId(), TOPIC_PAYMENT_REQUESTED,
+                    payload, event.getClass().getName());
             outboxRepository.save(outbox);
             log.info("Event saved to outbox: eventId={}, orderId={}", event.getEventId(), event.getOrderId());
         } catch (Exception e) {

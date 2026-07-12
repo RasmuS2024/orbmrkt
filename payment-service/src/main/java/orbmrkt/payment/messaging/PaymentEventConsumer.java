@@ -41,8 +41,10 @@ public class PaymentEventConsumer {
                 event.getOrderId(), event.getUserId(), event.getAmount());
 
         try {
-            long newBalance = accountService.debit(event.getOrderId(), event.getUserId(), event.getAmount().longValue());
-            paymentEventPublisher.publishPaymentCompleted(event.getOrderId(), event.getUserId(), event.getAmount(), newBalance);
+            long newBalance = accountService.debit(
+                    event.getOrderId(), event.getUserId(), event.getAmount().longValue());
+            paymentEventPublisher.publishPaymentCompleted(
+                    event.getOrderId(), event.getUserId(), event.getAmount(), newBalance);
             log.info("Payment completed for orderId: {}", event.getOrderId());
         } catch (PaymentException ex) {
             log.warn("Payment failed for orderId: {}: {}", event.getOrderId(), ex.getMessage());

@@ -16,7 +16,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -31,7 +35,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -107,7 +112,9 @@ class OrdersIntegrationTest {
         OrderEntity order;
         do {
             order = orderRepository.findById(orderId).orElse(null);
-            if (order != null && expectedStatus.equals(order.getStatus())) return order;
+            if (order != null && expectedStatus.equals(order.getStatus())) {
+                return order;
+            }
             Thread.sleep(100);
         } while (System.currentTimeMillis() < deadline);
         return order;
@@ -251,7 +258,6 @@ class OrdersIntegrationTest {
 
     @Test
     void listOrders_returnsOnlyUserOrders() {
-        OrderResponse order1 = createOrder();
         var request = new CreateOrderRequest();
         request.setProductType(ProductType.ARCHIVE);
         request.setPrice(BigDecimal.valueOf(300));
@@ -259,6 +265,7 @@ class OrdersIntegrationTest {
         rest.exchange("/api/v1/orders/orders", HttpMethod.POST,
                 new HttpEntity<>(request, headers("00000000-0000-0000-0000-000000000001")), OrderResponse.class);
 
+        OrderResponse order1 = createOrder();
         var response = rest.exchange("/api/v1/orders/orders", HttpMethod.GET,
                 new HttpEntity<>(headers()),
                 new ParameterizedTypeReference<List<OrderResponse>>() {});

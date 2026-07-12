@@ -32,7 +32,8 @@ public class PaymentEventPublisher {
 
         try {
             String payload = objectMapper.writeValueAsString(event);
-            OutboxEntity outbox = new OutboxEntity(event.getEventId(), TOPIC_PAYMENT_RESULT, payload, event.getClass().getName());
+            OutboxEntity outbox = new OutboxEntity(event.getEventId(), TOPIC_PAYMENT_RESULT,
+                    payload, event.getClass().getName());
             outboxRepository.save(outbox);
             log.info("Payment completed event saved to outbox: eventId={}, orderId={}", event.getEventId(), orderId);
         } catch (Exception e) {
@@ -50,7 +51,8 @@ public class PaymentEventPublisher {
 
         try {
             String payload = objectMapper.writeValueAsString(event);
-            OutboxEntity outbox = new OutboxEntity(event.getEventId(), TOPIC_PAYMENT_RESULT, payload, event.getClass().getName());
+            OutboxEntity outbox = new OutboxEntity(event.getEventId(), TOPIC_PAYMENT_RESULT,
+                    payload, event.getClass().getName());
             outboxRepository.save(outbox);
             log.info("Payment failed event saved to outbox: eventId={}, orderId={}", event.getEventId(), orderId);
         } catch (Exception e) {

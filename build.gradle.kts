@@ -32,12 +32,20 @@ subprojects {
     apply(plugin = "java")
     apply(plugin = "io.spring.dependency-management")
     apply(plugin = "jacoco")
+    apply(plugin = "checkstyle")
 
     configure<io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension> {
         dependencies {
             dependency("org.apache.commons:commons-lang3:3.18.0")
             dependency("ch.qos.logback:logback-core:1.5.35")
         }
+    }
+
+    configure<org.gradle.api.plugins.quality.CheckstyleExtension> {
+        toolVersion = "10.23.0"
+        configFile = rootProject.file("config/checkstyle/checkstyle.xml")
+        maxErrors = 0
+        maxWarnings = 0
     }
 
     java {

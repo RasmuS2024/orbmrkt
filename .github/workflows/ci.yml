@@ -38,6 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read
       security-events: write
     steps:
       - uses: actions/checkout@v7.0.0
@@ -66,11 +67,17 @@ jobs:
       - name: Build project (dependencies resolution for Trivy)
         run: ./gradlew build -x test
 
+      - name: Download Syft
+        uses: anchore/sbom-action/download-syft@v0
+
+      - name: Generate SBOM
+        run: syft dir:. -o cyclonedx-json > sbom.json
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
+          scan-type: 'sbom'
+          scan-ref: 'sbom.json'
           scanners: 'vuln'
           format: 'sarif'
           output: 'trivy-results.sarif'

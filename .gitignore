@@ -4,6 +4,7 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 .kotlin
+report.json
 
 ### Environment ###
 .env
@@ -58,3 +59,10 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### PlantUML ###
+plantuml.jar
+docs/diagrams/C4_Context.puml
+docs/diagrams/C4_Container.puml
+docs/diagrams/*.pdf
+docs/diagrams/plantuml.cfg

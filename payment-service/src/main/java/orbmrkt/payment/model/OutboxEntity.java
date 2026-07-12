@@ -34,6 +34,9 @@ public class OutboxEntity {
     @Column(nullable = false)
     private int attempts = 0;
 
+    @Column
+    private String eventType;
+
     @Column(columnDefinition = "TEXT")
     private String lastError;
 
@@ -45,9 +48,10 @@ public class OutboxEntity {
         this.createdAt = Instant.now();
     }
 
-    public OutboxEntity(UUID eventId, String topic, String payload) {
+    public OutboxEntity(UUID eventId, String topic, String payload, String eventType) {
         this.eventId = eventId;
         this.topic = topic;
         this.payload = payload;
+        this.eventType = eventType;
     }
 }

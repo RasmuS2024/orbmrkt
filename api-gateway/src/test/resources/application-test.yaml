@@ -1,0 +1,48 @@
+spring:
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 500
+      server:
+        webflux:
+          routes:
+            - id: order-service
+              uri: http://localhost:1
+              predicates:
+                - Path=/api/v1/orders/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: orderServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/order-service
+            - id: payment-service
+              uri: http://localhost:1
+              predicates:
+                - Path=/api/v1/payments/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: paymentServiceCircuitBreaker
+                    fallbackUri: forward:/fallback/payment-service
+
+springdoc:
+  swagger-ui:
+    enabled: false
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      orderServiceCircuitBreaker:
+        slidingWindowSize: 2
+        failureRateThreshold: 50
+        waitDurationInOpenState: 5000
+        permittedNumberOfCallsInHalfOpenState: 1
+      paymentServiceCircuitBreaker:
+        slidingWindowSize: 2
+        failureRateThreshold: 50
+        waitDurationInOpenState: 5000
+        permittedNumberOfCallsInHalfOpenState: 1
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 500ms

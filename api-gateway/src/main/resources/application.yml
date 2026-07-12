@@ -26,6 +26,28 @@ spring:
                     name: paymentServiceCircuitBreaker
                     fallbackUri: forward:/fallback/payment-service
 
+            - id: openapi-order-service
+              uri: http://order-service:8081
+              predicates:
+                - Path=/v3/api-docs/order-service
+              filters:
+                - RewritePath=/v3/api-docs/order-service, /v3/api-docs
+
+            - id: openapi-payment-service
+              uri: http://payment-service:8082
+              predicates:
+                - Path=/v3/api-docs/payment-service
+              filters:
+                - RewritePath=/v3/api-docs/payment-service, /v3/api-docs
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: order-service
+        url: /v3/api-docs/order-service
+      - name: payment-service
+        url: /v3/api-docs/payment-service
+
 resilience4j:
   circuitbreaker:
     configs:

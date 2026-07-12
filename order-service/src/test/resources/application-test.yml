@@ -1,7 +1,10 @@
 spring:
+  datasource:
+    hikari:
+      connection-timeout: 2000
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: create
     show-sql: false
   kafka:
     consumer:

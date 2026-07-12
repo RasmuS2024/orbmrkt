@@ -1,0 +1,19 @@
+@startuml C1-SystemContext
+!include C4_Context.puml
+
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+
+title System Context - orbmrkt
+
+Person(operator, "Оператор ДЗЗ", "Оператор дистанционного зондирования Земли. Создаёт заказы на съёмку (TASKING), управляет заданиями.")
+Person(analyst, "Аналитик", "Аналитик геоданных. Заказывает архивные снимки (ARCHIVE), оформляет подписки на мониторинг (MONITORING), управляет балансом геокредитов.")
+Person(admin, "Администратор", "Системный администратор. Мониторит систему через Kafka UI, управляет инфраструктурой.")
+
+System(orbmrkt, "orbmrkt", "Микросервисная платформа для управления заказами спутниковых данных и обработки платежей в геокредитах.")
+
+Rel(operator, orbmrkt, "Создаёт заказы на съёмку, отслеживает статус", "HTTPS/REST через API Gateway")
+Rel(analyst, orbmrkt, "Заказывает архивные снимки, подписки, пополняет баланс", "HTTPS/REST через API Gateway")
+Rel(admin, orbmrkt, "Мониторит систему, управляет инфраструктурой", "HTTPS/REST, Kafka UI")
+
+@enduml

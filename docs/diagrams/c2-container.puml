@@ -1,0 +1,48 @@
+@startuml C2-Containers
+!include C4_Container.puml
+
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+
+title Container Diagram - orbmrkt
+
+Person(operator, "Оператор ДЗЗ", "Оператор дистанционного зондирования Земли")
+Person(analyst, "Аналитик", "Аналитик геоданных")
+Person(admin, "Администратор", "Системный администратор")
+
+System_Boundary(orbmrkt, "orbmrkt") {
+    Container(gateway, "API Gateway", "Spring Cloud Gateway", "Единая точка входа, маршрутизация HTTP-запросов, Circuit Breaker, проброс X-User-Id")
+    
+    Container(order_service, "Order Service", "Spring Boot 3.5, Java 21", "Управление заказами, валидация payload, жизненный цикл статусов, Transactional Outbox/Inbox")
+    
+    Container(payment_service, "Payment Service", "Spring Boot 3.5, Java 21", "Управление счетами, баланс геокредитов, пополнение, списание, идемпотентность, Transactional Outbox/Inbox")
+    
+    ContainerDb(order_db, "Order DB", "PostgreSQL 16", "Хранение заказов (orders), исходящих событий (outbox), входящих событий (inbox)")
+    
+    ContainerDb(payment_db, "Payment DB", "PostgreSQL 16", "Хранение счетов (accounts), обработанных платежей (processed_payments), outbox, inbox")
+    
+    ContainerQueue(kafka, "Kafka", "Apache Kafka (KRaft mode)", "Брокер сообщений для асинхронной коммуникации между сервисами. Топики: order.payment.requested, order.payment.result")
+    
+    Container(kafka_ui, "Kafka UI", "provectuslabs/kafka-ui", "Веб-интерфейс для мониторинга топиков, сообщений и consumer groups")
+}
+
+Rel(operator, gateway, "HTTP запросы", "REST /api/v1/orders/**")
+Rel(analyst, gateway, "HTTP запросы", "REST /api/v1/orders/**, /api/v1/payments/**")
+Rel(admin, gateway, "HTTP запросы", "REST /api/v1/**")
+Rel(admin, kafka_ui, "Мониторинг", "HTTP :8085")
+
+Rel(gateway, order_service, "Маршрутизация", "/api/v1/orders/**")
+Rel(gateway, payment_service, "Маршрутизация", "/api/v1/payments/**")
+
+Rel(order_service, order_db, "Чтение/запись", "JPA/Hibernate, @Transactional")
+Rel(payment_service, payment_db, "Чтение/запись", "JPA/Hibernate, @Transactional, @Version")
+
+Rel(order_service, kafka, "Публикация событий", "OutboxPollingWorker → order.payment.requested")
+Rel(kafka, payment_service, "Потребление событий", "PaymentEventConsumer ← order.payment.requested")
+
+Rel(payment_service, kafka, "Публикация событий", "OutboxPollingWorker → order.payment.result")
+Rel(kafka, order_service, "Потребление событий", "OrderEventConsumer ← order.payment.result")
+
+Rel(kafka_ui, kafka, "Мониторинг", "HTTP API")
+
+@enduml

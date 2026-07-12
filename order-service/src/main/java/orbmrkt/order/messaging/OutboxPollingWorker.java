@@ -1,5 +1,6 @@
 package orbmrkt.order.messaging;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import orbmrkt.order.config.OutboxProperties;
@@ -25,6 +26,7 @@ public class OutboxPollingWorker {
     private final InboxRepository inboxRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final OutboxProperties properties;
+    private final ObjectMapper objectMapper;
 
     @Scheduled(fixedDelayString = "${outbox.polling-interval-ms}")
     @Transactional
@@ -42,8 +44,14 @@ public class OutboxPollingWorker {
                         PageRequest.of(0, properties.getBatchSize())));
 
         for (OutboxEntity event : events) {
+            if (event.getEventType() == null) {
+                log.warn("Skipping outbox row with null eventType: eventId={}", event.getEventId());
+                continue;
+            }
             try {
-                kafkaTemplate.send(event.getTopic(), event.getEventId().toString(), event.getPayload()).get();
+                Class<?> type = Class.forName(event.getEventType());
+                Object payload = objectMapper.readValue(event.getPayload(), type);
+                kafkaTemplate.send(event.getTopic(), event.getEventId().toString(), payload).get();
                 event.setProcessed(true);
                 log.debug("Published event from outbox: eventId={}", event.getEventId());
             } catch (Exception e) {

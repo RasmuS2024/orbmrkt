@@ -7,7 +7,10 @@ import orbmrkt.dto.OrderStatus;
 import orbmrkt.dto.ProductType;
 import orbmrkt.order.dto.ArchivePayload;
 import orbmrkt.order.dto.CreateOrderRequest;
+import orbmrkt.order.dto.MonitoringPayload;
 import orbmrkt.order.dto.OrderResponse;
+import orbmrkt.order.dto.TaskingPayload;
+import orbmrkt.order.dto.TimeWindow;
 import orbmrkt.order.exception.OrderException;
 import orbmrkt.order.messaging.OrderEventPublisher;
 import orbmrkt.order.model.OrderEntity;
@@ -16,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -31,19 +35,35 @@ public class OrderService {
     @Transactional
     public OrderResponse createOrder(String userId, CreateOrderRequest request) {
         if (userId == null || userId.isBlank()) {
-            throw new OrderException(HttpStatus.BAD_REQUEST, "MISSING_USER_ID", "Требуется User ID");
+            throw new OrderException(HttpStatus.BAD_REQUEST, "MISSING_USER_ID", "User ID is required");
         }
 
-        validateProductType(request.getProductType());
-        validatePrice(request.getPrice());
-        validatePayload(request.getProductType(), request.getPayload());
+        String validationError = validateOrder(request);
+        if (validationError != null) {
+            String message = switch (validationError) {
+                case "INVALID_PRICE" -> "Price must be greater than 0";
+                case "UNKNOWN_PRODUCT_TYPE" -> "Unsupported product type";
+                default -> "Missing required fields in payload";
+            };
+            OrderEntity order = new OrderEntity();
+            order.setUserId(userId);
+            order.setProductType(request.getProductType() != null
+                    ? request.getProductType().name() : "UNKNOWN");
+            order.setPrice(request.getPrice() != null ? request.getPrice() : BigDecimal.ZERO);
+            order.setPayload(request.getPayload() != null
+                    ? serializePayload(request.getPayload()) : "{}");
+            order.setStatus(OrderStatus.REJECTED.name());
+            order.setFailureReason(validationError);
+            repository.save(order);
+            throw new OrderException(HttpStatus.BAD_REQUEST, validationError, message);
+        }
 
         OrderEntity order = new OrderEntity();
         order.setUserId(userId);
         order.setProductType(request.getProductType().name());
         order.setPrice(request.getPrice());
+        order.setPayload(request.getPayload() != null ? serializePayload(request.getPayload()) : "{}");
         order.setStatus(OrderStatus.CREATED.name());
-        order.setPayload(serializePayload(request.getPayload()));
         order = repository.save(order);
 
         OrderPaymentRequested event = new OrderPaymentRequested();
@@ -62,7 +82,7 @@ public class OrderService {
         OrderEntity order = repository.findById(orderId)
                 .filter(o -> o.getUserId().equals(userId))
                 .orElseThrow(() -> new OrderException(
-                        HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "Заказ не найден"));
+                        HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "Order not found"));
         return toResponse(order);
     }
 
@@ -72,33 +92,38 @@ public class OrderService {
                 .toList();
     }
 
-    private void validateProductType(ProductType productType) {
-        if (productType == null) {
-            throw new OrderException(HttpStatus.BAD_REQUEST, "UNKNOWN_PRODUCT_TYPE",
-                    "Требуется тип продукта");
+    private String validateOrder(CreateOrderRequest request) {
+        if (request.getProductType() == null) {
+            return "UNKNOWN_PRODUCT_TYPE";
         }
-    }
-
-    private void validatePrice(java.math.BigDecimal price) {
-        if (price == null || price.compareTo(java.math.BigDecimal.ZERO) <= 0) {
-            throw new OrderException(HttpStatus.BAD_REQUEST, "INVALID_PRICE",
-                    "Цена должна быть больше 0");
+        if (request.getPrice() == null || request.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            return "INVALID_PRICE";
         }
-    }
-
-    private void validatePayload(ProductType productType, Map<String, Object> payload) {
-        if (payload == null || payload.isEmpty()) {
-            throw new OrderException(HttpStatus.BAD_REQUEST, "INVALID_PAYLOAD",
-                    "Требуется payload");
+        if (request.getPayload() == null || request.getPayload().isEmpty()) {
+            return "INVALID_PAYLOAD";
         }
-        if (productType == ProductType.ARCHIVE) {
-            ArchivePayload archive = objectMapper.convertValue(payload, ArchivePayload.class);
-            if (isBlank(archive.getAreaOfInterest()) || isBlank(archive.getCaptureDate())
+        if (request.getProductType() == ProductType.ARCHIVE) {
+            ArchivePayload archive = objectMapper.convertValue(request.getPayload(), ArchivePayload.class);
+            if (isBlank(archive.getAoi()) || isBlank(archive.getCaptureDate())
                     || isBlank(archive.getSensorType())) {
-                throw new OrderException(HttpStatus.BAD_REQUEST, "INVALID_PAYLOAD",
-                        "Для ARCHIVE требуются area_of_interest, capture_date, sensor_type");
+                return "INVALID_PAYLOAD";
+            }
+        } else if (request.getProductType() == ProductType.TASKING) {
+            TaskingPayload tasking = objectMapper.convertValue(request.getPayload(), TaskingPayload.class);
+            TimeWindow tw = tasking.getTimeWindow();
+            if (isBlank(tasking.getAoi()) || tw == null
+                    || isBlank(tw.getFrom()) || isBlank(tw.getTo())
+                    || isBlank(tasking.getSensorType())) {
+                return "INVALID_PAYLOAD";
+            }
+        } else if (request.getProductType() == ProductType.MONITORING) {
+            MonitoringPayload monitoring = objectMapper.convertValue(request.getPayload(), MonitoringPayload.class);
+            if (isBlank(monitoring.getAoi()) || isBlank(monitoring.getCadence())
+                    || monitoring.getDurationDays() <= 0) {
+                return "INVALID_PAYLOAD";
             }
         }
+        return null;
     }
 
     private boolean isBlank(String value) {
@@ -110,7 +135,7 @@ public class OrderService {
             return objectMapper.writeValueAsString(payload);
         } catch (Exception e) {
             throw new OrderException(HttpStatus.BAD_REQUEST, "INVALID_PAYLOAD",
-                    "Не удалось сериализовать payload");
+                    "Failed to serialize payload");
         }
     }
 

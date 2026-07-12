@@ -1,7 +1,6 @@
 package orbmrkt.order.controller;
 
 import lombok.RequiredArgsConstructor;
-import orbmrkt.dto.ApiResponse;
 import orbmrkt.order.dto.CreateOrderRequest;
 import orbmrkt.order.dto.OrderResponse;
 import orbmrkt.order.service.OrderService;
@@ -20,26 +19,23 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("/orders")
-    public ResponseEntity<ApiResponse<OrderResponse>> createOrder(
+    public ResponseEntity<OrderResponse> createOrder(
             @RequestHeader("X-User-Id") String userId,
             @RequestBody CreateOrderRequest request) {
         OrderResponse response = orderService.createOrder(userId, request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(response));
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/orders")
-    public ResponseEntity<ApiResponse<List<OrderResponse>>> listOrders(
+    public ResponseEntity<List<OrderResponse>> listOrders(
             @RequestHeader("X-User-Id") String userId) {
-        List<OrderResponse> responses = orderService.listOrders(userId);
-        return ResponseEntity.ok(ApiResponse.success(responses));
+        return ResponseEntity.ok(orderService.listOrders(userId));
     }
 
     @GetMapping("/orders/{orderId}")
-    public ResponseEntity<ApiResponse<OrderResponse>> getOrder(
+    public ResponseEntity<OrderResponse> getOrder(
             @RequestHeader("X-User-Id") String userId,
             @PathVariable UUID orderId) {
-        OrderResponse response = orderService.getOrder(orderId, userId);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(orderService.getOrder(orderId, userId));
     }
 }

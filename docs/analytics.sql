@@ -1,4 +1,3 @@
--- Analytics SQL: Payment Service Statistics
 -- Сумма и количество оплаченных заказов по каждому user_id
 
 SELECT

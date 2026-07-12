@@ -6,5 +6,5 @@ import lombok.Data;
 @Data
 public class TopUpRequest {
     @JsonProperty("amount")
-    private Long amount;
+    private long amount;
 }

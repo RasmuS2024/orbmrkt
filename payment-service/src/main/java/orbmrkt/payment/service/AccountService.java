@@ -21,11 +21,6 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final ProcessedPaymentRepository processedPaymentRepository;
 
-    @Transactional(readOnly = true)
-    public boolean accountExists(String userId) {
-        return accountRepository.existsByUserId(userId);
-    }
-
     @Transactional
     public AccountResponse createAccount(String userId) {
         return accountRepository.findByUserId(userId)
@@ -41,11 +36,11 @@ public class AccountService {
     @Transactional
     public BalanceResponse topUp(String userId, long amount) {
         if (amount <= 0) {
-            throw new PaymentException(HttpStatus.BAD_REQUEST, "INVALID_AMOUNT", "Сумма должна быть больше нуля");
+            throw new PaymentException(HttpStatus.BAD_REQUEST, "INVALID_AMOUNT", "Amount must be greater than zero");
         }
 
         AccountEntity account = accountRepository.findByUserId(userId)
-                .orElseThrow(() -> new PaymentException(HttpStatus.NOT_FOUND, "ACCOUNT_NOT_FOUND", "Счёт не найден"));
+                .orElseThrow(() -> new PaymentException(HttpStatus.NOT_FOUND, "ACCOUNT_NOT_FOUND", "Account not found"));
 
         account.setBalance(account.getBalance() + amount);
         account = accountRepository.save(account);
@@ -61,7 +56,6 @@ public class AccountService {
         return new BalanceResponse(account.getUserId(), account.getBalance(), "geocredits");
     }
 
-    @Transactional
     public long debit(UUID orderId, String userId, long amount) {
         if (processedPaymentRepository.existsByOrderId(orderId)) {
             AccountEntity account = accountRepository.findByUserId(userId)
@@ -73,7 +67,7 @@ public class AccountService {
                 .orElseThrow(() -> new PaymentException(HttpStatus.NOT_FOUND, "ACCOUNT_NOT_FOUND", "Счёт не найден"));
 
         if (account.getBalance() < amount) {
-            throw new PaymentException(HttpStatus.BAD_REQUEST, "INSUFFICIENT_BALANCE", "Недостаточно средств");
+            throw new PaymentException(HttpStatus.BAD_REQUEST, "INSUFFICIENT_BALANCE", "Insufficient balance");
         }
 
         account.setBalance(account.getBalance() - amount);

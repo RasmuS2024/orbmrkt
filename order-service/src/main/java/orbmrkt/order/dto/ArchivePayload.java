@@ -6,8 +6,7 @@ import lombok.Data;
 @Data
 public class ArchivePayload {
 
-    @JsonProperty("area_of_interest")
-    private String areaOfInterest;
+    private String aoi;
 
     @JsonProperty("capture_date")
     private String captureDate;

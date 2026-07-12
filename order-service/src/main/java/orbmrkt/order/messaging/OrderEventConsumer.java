@@ -8,6 +8,7 @@ import orbmrkt.order.model.InboxEntity;
 import orbmrkt.order.model.OrderEntity;
 import orbmrkt.order.repository.InboxRepository;
 import orbmrkt.order.repository.OrderRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -29,17 +30,22 @@ public class OrderEventConsumer {
             log.debug("Duplicate event skipped: eventId={}", event.getEventId());
             return;
         }
-        inboxRepository.save(new InboxEntity(event.getEventId()));
+        try {
+            inboxRepository.save(new InboxEntity(event.getEventId()));
+        } catch (DataIntegrityViolationException e) {
+            log.debug("Duplicate event (concurrent): eventId={}", event.getEventId());
+            return;
+        }
 
-        log.info("Получен результат оплаты (COMPLETED) для orderId: {}, newBalance: {}",
+        log.info("Payment result received (COMPLETED) for orderId: {}, newBalance: {}",
                 event.getOrderId(), event.getNewBalance());
 
         OrderEntity order = orderRepository.findById(event.getOrderId())
-                .orElseThrow(() -> new RuntimeException("Заказ не найден: " + event.getOrderId()));
+                .orElseThrow(() -> new RuntimeException("Order not found: " + event.getOrderId()));
 
         order.setStatus("PAID");
         order.setFailureReason(null);
-        log.info("Заказ {} оплачен", event.getOrderId());
+        log.info("Order {} paid", event.getOrderId());
     }
 
     @Transactional
@@ -49,13 +55,18 @@ public class OrderEventConsumer {
             log.debug("Duplicate event skipped: eventId={}", event.getEventId());
             return;
         }
-        inboxRepository.save(new InboxEntity(event.getEventId()));
+        try {
+            inboxRepository.save(new InboxEntity(event.getEventId()));
+        } catch (DataIntegrityViolationException e) {
+            log.debug("Duplicate event (concurrent): eventId={}", event.getEventId());
+            return;
+        }
 
-        log.warn("Получен результат оплаты (FAILED) для orderId: {}, reason: {}",
+        log.warn("Payment result received (FAILED) for orderId: {}, reason: {}",
                 event.getOrderId(), event.getReason());
 
         OrderEntity order = orderRepository.findById(event.getOrderId())
-                .orElseThrow(() -> new RuntimeException("Заказ не найден: " + event.getOrderId()));
+                .orElseThrow(() -> new RuntimeException("Order not found: " + event.getOrderId()));
 
         order.setStatus("PAYMENT_FAILED");
         order.setFailureReason(event.getReason());
@@ -63,6 +74,6 @@ public class OrderEventConsumer {
 
     @KafkaHandler(isDefault = true)
     public void handleUnknown(Object message) {
-        log.warn("Получено неизвестное событие: {}", message);
+        log.warn("Unknown event received: {}", message);
     }
 }

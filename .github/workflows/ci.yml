@@ -34,6 +34,7 @@ jobs:
         run: ./gradlew build
 
   security-scan:
+    needs: [test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -62,8 +63,8 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Generate Gradle lockfiles for Trivy
-        run: ./gradlew :api-gateway:dependencies :order-service:dependencies :payment-service:dependencies --write-locks
+      - name: Build project (dependencies resolution for Trivy)
+        run: ./gradlew build -x test
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master

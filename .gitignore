@@ -12,6 +12,7 @@ semgrep-report-pro.json
 semgrep-report.json
 grype-report.json
 sbom.json
+plantuml.jar
 
 ### Environment ###
 .env
@@ -71,5 +72,5 @@ bin/
 plantuml.jar
 docs/diagrams/C4_Context.puml
 docs/diagrams/C4_Container.puml
-docs/diagrams/*.pdf
+
 docs/diagrams/plantuml.cfg

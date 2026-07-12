@@ -71,33 +71,15 @@ graph TB
 
 Подробные диаграммы доступны в [`docs/diagrams/`](docs/diagrams/):
 
-- **[C4 Level 1: System Context](docs/diagrams/c1-context.puml)** – система в контексте внешнего мира (оператор ДЗЗ, аналитик, администратор)
-- **[C4 Level 2: Container](docs/diagrams/c2-container.puml)** – технологические контейнеры (сервисы, БД, Kafka)
-- **[Диаграммы потоков](docs/diagrams/flow-diagrams.md)** – Sequence, Activity, State диаграммы:
+- **C1 System Context** — [`docs/diagrams/c1-context.puml`](docs/diagrams/c1-context.puml) / [PDF](docs/diagrams/c1-context.pdf) — система в контексте внешнего мира (оператор ДЗЗ, аналитик, администратор)
+- **C2 Containers** — [`docs/diagrams/c2-container.puml`](docs/diagrams/c2-container.puml) / [PDF](docs/diagrams/c2-container.pdf) — технологические контейнеры (сервисы, БД, Kafka)
+- **[Диаграммы потоков](docs/diagrams/flow-diagrams.md)** – Sequence, State диаграммы:
   - Happy Path (успешная оплата)
   - Payment Failed (недостаточно средств)
-  - Outbox/Inbox Pattern (детально)
   - Order Lifecycle (жизненный цикл заказа)
   - Идемпотентность (повторный запрос)
   - Concurrent Operations (optimistic locking)
 
-### Экспорт C4-диаграмм в PDF
-
-```bash
-# Скачать plantuml.jar (если ещё не скачан)
-curl -L -o plantuml.jar https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar
-
-# Скачать C4-PlantUML макросы (для локальной работы без интернета)
-curl -L -o docs/diagrams/C4_Context.puml https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
-curl -L -o docs/diagrams/C4_Container.puml https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
-
-# Экспорт в PDF (с поддержкой кириллицы)
-cd docs/diagrams
-java -jar ../../plantuml.jar -charset UTF-8 -tpdf c1-context.puml
-java -jar ../../plantuml.jar -charset UTF-8 -tpdf c2-container.puml
-```
-
-**Примечание:** PDF файлы генерируются локально и не коммитятся в репозиторий.
 
 ## Технологический стек
 
@@ -115,82 +97,6 @@ java -jar ../../plantuml.jar -charset UTF-8 -tpdf c2-container.puml
 | Документация | Springdoc OpenAPI (springdoc-openapi-starter-webflux-ui) |
 | Тестирование | JUnit 5, Testcontainers, Embedded Kafka |
 | Контейнеризация | Docker, docker-compose |
-
-## Структура проекта
-
-```
-orbmrkt/
-├── api-gateway/                 # Маршрутизация, Circuit Breaker, обработка ошибок
-│   ├── src/main/java/orbmrkt/gateway/
-│   │   ├── ApiGatewayApplication.java
-│   │   ├── controller/FallbackController.java
-│   │   └── handler/GlobalErrorHandler.java
-│   ├── build.gradle.kts
-│   └── Dockerfile
-├── common-dto/                  # Общие DTO + shared test utilities
-│   ├── src/main/java/orbmrkt/dto/
-│   │   ├── ApiResponse.java             # Generic обёртка ответа
-│   │   ├── OrderStatus.java             # Статусы заказа (enum)
-│   │   ├── ProductType.java             # Типы продуктов (enum)
-│   │   ├── OrderPaymentRequested.java   # Событие: запрос оплаты
-│   │   ├── OrderPaymentCompleted.java   # Событие: оплата успешна
-│   │   └── OrderPaymentFailed.java      # Событие: оплата не удалась
-│   ├── src/testFixtures/java/orbmrkt/test/
-│   │   └── KafkaTestUtils.java         # Shared Kafka helper for all services
-│   └── build.gradle.kts
-├── order-service/               # REST API заказов + Kafka producer/consumer
-│   ├── src/main/java/orbmrkt/
-│   │   ├── OrderApplication.java
-│   │   ├── order/
-│   │   │   ├── controller/OrderController.java
-│   │   │   ├── service/OrderService.java
-│   │   │   ├── dto/ (CreateOrderRequest, OrderResponse, ArchivePayload)
-│   │   │   ├── model/ (OrderEntity, OutboxEntity, InboxEntity)
-│   │   │   ├── repository/ (OrderRepository, OutboxRepository, InboxRepository)
-│   │   │   ├── messaging/ (OrderEventPublisher, OrderEventConsumer, OutboxPollingWorker)
-│   │   │   ├── config/OutboxProperties.java
-│   │   │   └── exception/ (OrderException, GlobalExceptionHandler)
-│   │   └── ...
-│   ├── src/test/java/orbmrkt/order/
-│   │   ├── OrdersIntegrationTest.java
-│   │   └── service/
-│   │       └── OrderServiceTest.java
-│   ├── build.gradle.kts
-│   └── Dockerfile
-├── payment-service/             # REST API платежей + Kafka producer/consumer
-│   ├── src/main/java/orbmrkt/
-│   │   ├── PaymentApplication.java
-│   │   ├── payment/
-│   │   │   ├── controller/AccountController.java
-│   │   │   ├── service/AccountService.java
-│   │   │   ├── dto/ (TopUpRequest, BalanceResponse, AccountResponse)
-│   │   │   ├── model/ (AccountEntity, OutboxEntity, InboxEntity, ProcessedPaymentEntity)
-│   │   │   ├── repository/ (AccountRepository, OutboxRepository, InboxRepository, ProcessedPaymentRepository)
-│   │   │   ├── messaging/ (PaymentEventPublisher, PaymentEventConsumer, OutboxPollingWorker)
-│   │   │   ├── config/OutboxProperties.java
-│   │   │   └── exception/ (PaymentException, GlobalExceptionHandler)
-│   │   └── ...
-│   ├── src/test/java/orbmrkt/payment/
-│   │   ├── PaymentsIntegrationTest.java
-│   │   └── service/
-│   │       └── AccountServiceTest.java
-│   ├── build.gradle.kts
-│   └── Dockerfile
-├── .github/workflows/
-│   └── ci.yml                    # CI: test + push-docker (Trivy, Syft)
-├── config/checkstyle/
-│   └── checkstyle.xml            # Google Java Style, maxLineLength=120
-├── docs/
-│   ├── analytics.sql             # Пример аналитического запроса
-│   ├── sca-report.md             # SCA: Before/After, accepted risk
-│   ├── security-report.md        # SAST: Semgrep Pro findings post-fix
-│   └── diagrams/
-│       └── flow-diagrams.md      # Sequence, Activity, State (Mermaid)
-├── docker-compose.yml
-├── .env.example
-├── settings.gradle.kts
-└── build.gradle.kts
-```
 
 ## Быстрый старт
 
@@ -211,7 +117,7 @@ docker compose up -d
 После запуска будут доступны:
 - **API Gateway:** `http://localhost:8080`
 - **Kafka UI:** `http://localhost:8085`
-- - **Swagger UI** – `http://localhost:8080/swagger-ui.html` (агрегированные API всех сервисов)
+- **Swagger UI** – `http://localhost:8080/swagger-ui.html` (агрегированные API всех сервисов)
 
 ### Локальная разработка
 
@@ -265,29 +171,6 @@ docker compose up -d kafka kafka-ui order-service-db payment-service-db
 
 **Заголовки:** `X-User-Id: 550e8400-e29b-41d4-a716-446655440000` (обязательный)
 
-**Пример создания архивного заказа:**
-```json
-{
-  "product_type": "ARCHIVE",
-  "price": 120,
-  "payload": {
-    "aoi": "POLYGON((...))",
-    "capture_date": "2024-06-15",
-    "sensor_type": "MSI"
-  }
-}
-```
-
-**Ответ (сразу после создания):**
-```json
-{
-  "order_id": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "PAYMENT_PENDING",
-  "product_type": "ARCHIVE",
-  "price": 120,
-  "created_at": "2026-05-21T12:00:00Z"
-}
-```
 
 ### Payment Service (платёжный сервис)
 
@@ -301,30 +184,6 @@ docker compose up -d kafka kafka-ui order-service-db payment-service-db
 
 **Заголовки:** `X-User-Id: 550e8400-e29b-41d4-a716-446655440000` (обязательный)
 
-**Пример пополнения:**
-```json
-{
-  "amount": 5000
-}
-```
-
-**Ответ баланса:**
-```json
-{
-  "user_id": "user-42",
-  "balance": 5000,
-  "currency": "geocredits"
-}
-```
-
-**Формат ответа (ошибка):**
-```json
-{
-  "error_code": "INSUFFICIENT_BALANCE",
-  "message": "Insufficient balance",
-  "timestamp": "2026-07-11T12:00:00Z"
-}
-```
 
 ### API Gateway (`:8080`)
 
@@ -334,7 +193,7 @@ docker compose up -d kafka kafka-ui order-service-db payment-service-db
 
 Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `failureRateThreshold=50%`, `timeoutDuration=10s`. При недоступности сервиса возвращается `503`.
 
-Документация Swagger UI: `http://localhost:8080/webjars/swagger-ui/index.html`
+Документация Swagger UI: `http://localhost:8080/swagger-ui.html`
 
 ## Kafka-события
 
@@ -343,37 +202,6 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 | `order.payment.requested` | Order Service | Payment Service | Запрос на оплату заказа |
 | `order.payment.result` | Payment Service | Order Service | Результат оплаты |
 
-### OrderPaymentRequested
-```json
-{
-  "event_id": "uuid",
-  "order_id": "uuid",
-  "user_id": "string",
-  "amount": 120,
-  "occurred_at": "2026-07-04T12:00:00Z"
-}
-```
-
-### OrderPaymentCompleted
-```json
-{
-  "event_id": "uuid",
-  "order_id": "uuid",
-  "user_id": "string",
-  "amount": 120,
-  "new_balance": 880
-}
-```
-
-### OrderPaymentFailed
-```json
-{
-  "event_id": "uuid",
-  "order_id": "uuid",
-  "user_id": "string",
-  "reason": "INSUFFICIENT_BALANCE"
-}
-```
 
 ## Надёжная доставка сообщений
 
@@ -397,10 +225,8 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 # Все тесты
 ./gradlew test
 
-# Payment Service (11 integration + 1 unit)
+# Отдельный сервис
 ./gradlew :payment-service:test
-
-# Order Service (16 integration + 3 unit)
 ./gradlew :order-service:test
 ```
 
@@ -419,19 +245,6 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 **Cross-service (6 тестов):** полные сценарии через Gateway (happy path, insufficient funds, idempotent order, two orders, duplicate account, concurrent operations).
 
 Happy-path тесты вынесены в E2E и удалены из модульных тестов (избежание дублирования).
-
-### Статистика тестов по модулям
-
-**order-service** (14 integration + 3 unit):
-- `OrdersIntegrationTest` – 14 integration tests: validation (missing headers, invalid JSON, zero/negative price, invalid/missing payload, unknown product type), product types (tasking, monitoring), Kafka consumers, inbox dedup, user-scoped list, wrong user, 404
-- `OrderServiceTest` – 3 unit tests (edge cases: zeroPrice, serializePayloadFails, savesRejectedOrder)
-
-**payment-service** (8 integration + 1 unit):
-- `PaymentsIntegrationTest` – 8 integration tests: error/boundary (missing user ID, invalid amount, negative amount, invalid JSON, account not found, invalid user ID, 404)
-- `AccountServiceTest` – 1 unit test (debit_sufficientFunds)
-
-**api-gateway** (11 tests):
-- `FallbackControllerTest`, `GlobalErrorHandlerTest` (8), `GatewayRoutingTest`, `CircuitBreakerIntegrationTest`
 
 ### Общие утилиты тестирования
 - `KafkaTestUtils` вынесен в `common-dto/src/testFixtures/java/orbmrkt/test/`
@@ -477,6 +290,7 @@ Happy-path тесты вынесены в E2E и удалены из модул�
 - **Структурированное логирование (JSON)** – `logstash-logback-encoder`, MDC (`userId`, `requestId`, `traceId`)
 - **Distributed tracing** – Micrometer Tracing + Brave/Zipkin
 - **Метрики** – Micrometer + Prometheus
+- **Кеширование** – Redis (кэширование баланса и списка заказов для снижения нагрузки на БД)
 
 ### 2. Безопасность
 - **Аутентификация** – JWT/OAuth2
@@ -484,6 +298,5 @@ Happy-path тесты вынесены в E2E и удалены из модул�
 
 ### 3. Фронтенд
 - **TypeSpec → OpenAPI → React + Vite**
-- `api-spec/` – TypeSpec-спецификации
 - `frontend/` – React 19 + TypeScript 5 + Vite
 - Компоненты: UserSelector, AccountPanel, OrderPanel

@@ -78,10 +78,6 @@
   - [x] Circuit Breaker (Resilience4j)
   - [x] Fallback endpoints
   - [x] Global Error Handler
-- [x] Интеграционные тесты:
-  - [x] Payment Service (5 сценариев)
-  - [x] Order Service (3 сценария)
-  - [x] Testcontainers + Embedded Kafka
 - [x] Диаграммы потоков данных (Sequence, Activity, State) – [`docs/diagrams/flow-diagrams.md`](docs/diagrams/flow-diagrams.md)
 
 **Результат:** Полностью интегрированная система, все тесты проходят.
@@ -96,13 +92,6 @@
 - [x] docs/analytics.sql (SQL-запросы для статистики)
 - [x] C4 диаграммы (Level 1-2) и диаграммы потоков
 - [x] Анализ безопасности – docs/security-report.md
-- [ ] Подготовка презентации:
-  - [ ] Слайды (архитектура, технологии, демо)
-  - [ ] Демонстрация сценариев (happy path, ошибки)
-  - [ ] Q&A подготовка
-- [ ] Финальное тестирование (все тесты проходят)
-- [ ] Сдача проекта
-
 **Результат:** Готовый проект с полной документацией.
 
 ---
@@ -136,38 +125,19 @@
 
 ---
 
-## Текущий статус (12.07.2026)
-
-**Прогресс:** 92%
-
-### Выполнено:
-- ✅ Архитектура и проектирование
-- ✅ Payments Service (полная функциональность)
-- ✅ Orders Service (полная функциональность)
-- ✅ Kafka интеграция (Outbox/Inbox)
-- ✅ API Gateway (маршрутизация, Circuit Breaker)
-- ✅ Интеграционные тесты (все проходят)
-- ✅ README.md
-- ✅ C4 диаграммы (Level 1-2)
-- ✅ Диаграммы потоков (Sequence, Activity, State)
-- ✅ Security scan (Gitleaks, Semgrep) – docs/security-report.md
-
-### Осталось:
-- ⏳ Подготовка презентации
-
 ## Технологический стек
 
-| Компонент | Технология | Версия |
-|-----------|-----------|--------|
-| Язык | Java | 21 |
-| Фреймворк | Spring Boot | 3.5.13 |
-| Сборка | Gradle (Kotlin DSL) | 9 |
-| База данных | PostgreSQL | 16 |
-| Брокер сообщений | Apache Kafka (KRaft) | latest |
-| API Gateway | Spring Cloud Gateway | WebFlux |
-| Circuit Breaker | Resilience4j | - |
-| Тестирование | JUnit 5, Testcontainers, Embedded Kafka | - |
-| Контейнеризация | Docker, docker-compose | - |
+| Компонент | Технология |
+|-----------|-----------|
+| Язык | Java 21 |
+| Фреймворк | Spring Boot |
+| Сборка | Gradle (Kotlin DSL) |
+| База данных | PostgreSQL |
+| Брокер сообщений | Apache Kafka (KRaft) |
+| API Gateway | Spring Cloud Gateway (WebFlux) |
+| Circuit Breaker | Resilience4j |
+| Тестирование | JUnit 5, Testcontainers, Embedded Kafka |
+| Контейнеризация | Docker, docker-compose |
 
 ## Архитектура
 
@@ -200,12 +170,4 @@
 4. Payments Service → Kafka (order.payment.result)
 5. Kafka → Orders Service (update status)
 
-## Критерии приёмки
 
-- [ ] Все 5 сценариев из чек-листа проходят
-- [ ] Все тесты проходят
-- [ ] C4 диаграммы (Level 1-2) готовы
-- [x] Анализ безопасности завершён
-- [ ] Документация полная (README, PROJECT, docs/security-report.md)
-- [ ] Демо работает без ошибок
-- [ ] Проект сдан

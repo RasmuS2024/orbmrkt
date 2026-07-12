@@ -27,37 +27,36 @@
 
 ## Архитектура
 
-```
-                         ┌──────────────────────┐
-                         │     API Gateway       │
-                         │     (порт 8080)       │
-                         └──────┬───────────────┘
-                                │
-              ┌─────────────────┼─────────────────┐
-              │ /api/v1/orders  │ /api/v1/payments │
-              ▼                 │                  ▼
-   ┌──────────────────┐        │       ┌──────────────────────┐
-   │   Order Service  │        │       │   Payment Service    │
-   │   (порт 8081)    │        │       │   (порт 8082)        │
-   │   ┌──────────┐   │        │       │   ┌──────────────┐   │
-   │   │ Outbox   │───┼────────┼───────┼──▶│   Inbox      │   │
-   │   └──────────┘   │        │       │   └──────────────┘   │
-   │                  │        │       │                      │
-   │   ┌──────────┐   │        │       │   ┌──────────────┐   │
-   │   │ Inbox    │◀──┼────────┼───────┼───│   Outbox     │   │
-   │   └──────────┘   │        │       │   └──────────────┘   │
-   └──────────────────┘        │       └──────────────────────┘
-          │                    │                │
-          ▼                    │                ▼
-   ┌──────────────┐           │         ┌──────────────┐
-   │  PostgreSQL   │           │         │  PostgreSQL   │
-   │  orbmrkt_orders│          │         │ orbmrkt_payments│
-   └──────────────┘           │         └──────────────┘
-                               ▼
-                    ┌──────────────────────┐
-                    │     Kafka (KRaft)     │
-                    │  order.payment.*      │
-                    └──────────────────────┘
+```mermaid
+graph TB
+    GW["API Gateway<br/>(:8080)"]
+
+    subgraph OS["Order Service (:8081)"]
+        OCtrl["Order Controller"]
+        OOutbox["Outbox"]
+        OInbox["Inbox"]
+        ODB[("PostgreSQL<br/>orbmrkt_orders")]
+    end
+
+    subgraph PS["Payment Service (:8082)"]
+        PCtrl["Account Controller"]
+        POutbox["Outbox"]
+        PInbox["Inbox"]
+        PDB[("PostgreSQL<br/>orbmrkt_payments")]
+    end
+
+    K["Kafka (KRaft)<br/>order.payment.*"]
+
+    GW -->|"/api/v1/orders/**"| OCtrl
+    GW -->|"/api/v1/payments/**"| PCtrl
+    OOutbox -->|"order.payment.requested"| K
+    K -->|"order.payment.requested"| PInbox
+    POutbox -->|"order.payment.result"| K
+    K -->|"order.payment.result"| OInbox
+    OCtrl --> OOutbox
+    OCtrl --> OInbox
+    PCtrl --> POutbox
+    PCtrl --> PInbox
 ```
 
 **Event flow:**
@@ -72,9 +71,9 @@
 
 Подробные диаграммы доступны в [`docs/diagrams/`](docs/diagrams/):
 
-- **[C4 Level 1: System Context](docs/diagrams/c1-context.puml)** — система в контексте внешнего мира (оператор ДЗЗ, аналитик, администратор)
-- **[C4 Level 2: Container](docs/diagrams/c2-container.puml)** — технологические контейнеры (сервисы, БД, Kafka)
-- **[Диаграммы потоков](docs/diagrams/flow-diagrams.md)** — Sequence, Activity, State диаграммы:
+- **[C4 Level 1: System Context](docs/diagrams/c1-context.puml)** – система в контексте внешнего мира (оператор ДЗЗ, аналитик, администратор)
+- **[C4 Level 2: Container](docs/diagrams/c2-container.puml)** – технологические контейнеры (сервисы, БД, Kafka)
+- **[Диаграммы потоков](docs/diagrams/flow-diagrams.md)** – Sequence, Activity, State диаграммы:
   - Happy Path (успешная оплата)
   - Payment Failed (недостаточно средств)
   - Outbox/Inbox Pattern (детально)
@@ -105,7 +104,7 @@ java -jar ../../plantuml.jar -charset UTF-8 -tpdf c2-container.puml
 | Компонент | Технология |
 |-----------|-----------|
 | Язык | Java 21 |
-| Фреймворк | Spring Boot 3.5.13 |
+| Фреймворк | Spring Boot 3.5.16 |
 | Сборка | Gradle 9 (Kotlin DSL) |
 | База данных | PostgreSQL 16 |
 | Брокер сообщений | Apache Kafka (KRaft mode) |
@@ -202,7 +201,7 @@ docker compose up -d
 После запуска будут доступны:
 - **API Gateway:** `http://localhost:8080`
 - **Kafka UI:** `http://localhost:8085`
-- - **Swagger UI** — `http://localhost:8080/swagger-ui.html` (агрегированные API всех сервисов)
+- - **Swagger UI** – `http://localhost:8080/swagger-ui.html` (агрегированные API всех сервисов)
 
 ### Локальная разработка
 
@@ -230,10 +229,10 @@ docker compose up -d kafka kafka-ui order-service-db payment-service-db
 |-----------|----------------------|----------|
 | `ORDER_SERVICE_DB_NAME` | `orbmrkt_orders` | Имя БД сервиса заказов |
 | `ORDER_SERVICE_DB_USER` | `postgres` | Пользователь БД |
-| `ORDER_SERVICE_DB_PASSWORD` | — | Пароль БД |
+| `ORDER_SERVICE_DB_PASSWORD` | – | Пароль БД |
 | `PAYMENT_SERVICE_DB_NAME` | `orbmrkt_payments` | Имя БД платёжного сервиса |
 | `PAYMENT_SERVICE_DB_USER` | `postgres` | Пользователь БД |
-| `PAYMENT_SERVICE_DB_PASSWORD` | — | Пароль БД |
+| `PAYMENT_SERVICE_DB_PASSWORD` | – | Пароль БД |
 | `ORDER_SERVICE_PORT` | `8081` | Порт сервиса заказов |
 | `PAYMENT_SERVICE_PORT` | `8082` | Порт платёжного сервиса |
 | `GATEWAY_PORT` | `8080` | Порт API Gateway |
@@ -376,29 +375,29 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 ./gradlew :order-service:test
 ```
 
-- **Testcontainers** — PostgreSQL в Docker-контейнере
-- **Embedded Kafka** — встроенный Kafka-брокер для тестов
+- **Testcontainers** – PostgreSQL в Docker-контейнере
+- **Embedded Kafka** – встроенный Kafka-брокер для тестов
 - **JUnit 5** + Spring Boot Test
 - **`application-test.yml`** в каждом сервисе: `spring.mvc.throw-exception-if-no-handler-found=true`
 
 ### Test counts by module
 
 **order-service** (16 integration + 3 unit):
-- `OrdersIntegrationTest` — 16 integration tests: CRUD, validation (missing headers, invalid JSON, zero/negative price, invalid/missing payload, unknown product type), product types (tasking, monitoring), wrong user, 404
-- `OrderServiceTest` — 3 unit tests (edge cases: zeroPrice, serializePayloadFails, savesRejectedOrder)
+- `OrdersIntegrationTest` – 16 integration tests: CRUD, validation (missing headers, invalid JSON, zero/negative price, invalid/missing payload, unknown product type), product types (tasking, monitoring), wrong user, 404
+- `OrderServiceTest` – 3 unit tests (edge cases: zeroPrice, serializePayloadFails, savesRejectedOrder)
 
 **payment-service** (11 integration + 1 unit):
-- `PaymentsIntegrationTest` — 11 integration tests: create account (duplicate/409), top-up (valid, invalid amount, negative, invalid JSON), get balance (success, account not found), 404
-- `AccountServiceTest` — 1 unit test (debit_sufficientFunds)
+- `PaymentsIntegrationTest` – 11 integration tests: create account (duplicate/409), top-up (valid, invalid amount, negative, invalid JSON), get balance (success, account not found), 404
+- `AccountServiceTest` – 1 unit test (debit_sufficientFunds)
 
 ### Shared test utilities
 - `KafkaTestUtils` вынесен в `common-dto/src/testFixtures/java/orbmrkt/test/`
 - Подключается через `testImplementation(testFixtures(project(":common-dto")))`
 
 ### Testing conventions
-- Exception handlers (400/404/409) — integration tests only (MockMvc end-to-end)
-- Global catch-all (`handleGeneral`) — intentionally not tested
-- Scheduled workers (`OutboxPollingWorker`) — excluded from JaCoCo
+- Exception handlers (400/404/409) – integration tests only (MockMvc end-to-end)
+- Global catch-all (`handleGeneral`) – intentionally not tested
+- Scheduled workers (`OutboxPollingWorker`) – excluded from JaCoCo
 
 ### Code Coverage (JaCoCo)
 
@@ -407,7 +406,7 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 ./gradlew check
 
 # Агрегированный отчёт по всем модулям
-c
+./gradlew jacocoRootReport
 ```
 
 - **Агрегированный отчёт:** `build/reports/jacoco/jacocoRootReport/html/index.html`
@@ -422,31 +421,31 @@ c
 ## Соглашения проекта
 
 - REST prefix: `/api/v1/...`
-- `X-User-Id` — обязательный заголовок для всех запросов, формат UUID (например, `550e8400-e29b-41d4-a716-446655440000`)
-- Формат ответа: успех — flat JSON (DTO напрямую), ошибка — `ApiResponse` с `error_code`, `message`, `timestamp`
+- `X-User-Id` – обязательный заголовок для всех запросов, формат UUID (например, `550e8400-e29b-41d4-a716-446655440000`)
+- Формат ответа: успех – flat JSON (DTO напрямую), ошибка – `ApiResponse` с `error_code`, `message`, `timestamp`
 - Поля: camelCase в Java, snake_case в JSON
-- Kafka event_id — UUID для дедупликации
+- Kafka event_id – UUID для дедупликации
 - Конфигурация через переменные окружения
 - Код на Java 21
 
 ## План развития до MVP
 
 ### 1. Надёжность и наблюдаемость
-- **Структурированное логирование (JSON)** — `logstash-logback-encoder`, MDC (`userId`, `requestId`, `traceId`)
-- **Distributed tracing** — Micrometer Tracing + Brave/Zipkin
-- **Метрики** — Micrometer + Prometheus
+- **Структурированное логирование (JSON)** – `logstash-logback-encoder`, MDC (`userId`, `requestId`, `traceId`)
+- **Distributed tracing** – Micrometer Tracing + Brave/Zipkin
+- **Метрики** – Micrometer + Prometheus
 
 ### 2. Безопасность
-- **Аутентификация** — JWT/OAuth2
-- **Rate limiting** — на API Gateway
+- **Аутентификация** – JWT/OAuth2
+- **Rate limiting** – на API Gateway
 
 ### 3. Фронтенд
 - **TypeSpec → OpenAPI → React + Vite**
-- `api-spec/` — TypeSpec-спецификации
-- `frontend/` — React 19 + TypeScript 5 + Vite
+- `api-spec/` – TypeSpec-спецификации
+- `frontend/` – React 19 + TypeScript 5 + Vite
 - Компоненты: UserSelector, AccountPanel, OrderPanel
 
 ### 4. CI/CD
-- GitHub Actions — test, build, docker push
-- **SCA (Software Composition Analysis)** — проверка зависимостей на известные CVE (OWASP Dependency-Check или Snyk)
-- **Security scanning в CI/CD** — автоматический запуск Gitleaks + Semgrep + SCA при каждом push
+- GitHub Actions – test, build, docker push
+- **SCA (Software Composition Analysis)** – проверка зависимостей на известные CVE (OWASP Dependency-Check или Snyk)
+- **Security scanning в CI/CD** – автоматический запуск Gitleaks + Semgrep + SCA при каждом push

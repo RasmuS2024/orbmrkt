@@ -19,9 +19,9 @@
 | **Разработчик** | Качественная архитектура, чистый код, соответствие best practices, демонстрация компетенций |
 | **Конечные пользователи** (разработчики фронтенда/мобильных приложений) | Стабильный REST API, понятная документация, предсказуемое поведение системы |
 
-## Roadmap (16.06.2026 — 12.07.2026)
+## Roadmap (16.06.2026 – 12.07.2026)
 
-### Неделя 1 (16.06 — 22.06): Планирование и проектирование
+### Неделя 1 (16.06 – 22.06): Планирование и проектирование
 
 **Цель:** Определить архитектуру, спроектировать API, настроить окружение.
 
@@ -31,13 +31,13 @@
 - [x] Проектирование REST API (endpoints, DTO, error codes)
 - [x] Настройка Gradle multi-module проекта
 - [x] Docker Compose для локальной разработки
-- [x] C4 Level 1-2 диаграммы (Context, Container) — [`docs/diagrams/c1-context.puml`](docs/diagrams/c1-context.puml), [`docs/diagrams/c2-container.puml`](docs/diagrams/c2-container.puml) (PDF генерируется локально)
+- [x] C4 Level 1-2 диаграммы (Context, Container) – [`docs/diagrams/c1-context.puml`](docs/diagrams/c1-context.puml), [`docs/diagrams/c2-container.puml`](docs/diagrams/c2-container.puml) (PDF генерируется локально)
 
 **Результат:** Архитектурное решение, настроенное окружение, базовая структура проекта.
 
 ---
 
-### Неделя 2 (23.06 — 29.06): Разработка ядра
+### Неделя 2 (23.06 – 29.06): Разработка ядра
 
 **Цель:** Реализовать базовую функциональность сервисов без интеграции.
 
@@ -56,7 +56,7 @@
 
 ---
 
-### Неделя 3 (30.06 — 06.07): Интеграция
+### Неделя 3 (30.06 – 06.07): Интеграция
 
 **Цель:** Реализовать асинхронную коммуникацию через Kafka, обеспечить надёжность.
 
@@ -82,20 +82,20 @@
   - [x] Payment Service (5 сценариев)
   - [x] Order Service (3 сценария)
   - [x] Testcontainers + Embedded Kafka
-- [x] Диаграммы потоков данных (Sequence, Activity, State) — [`docs/diagrams/flow-diagrams.md`](docs/diagrams/flow-diagrams.md)
+- [x] Диаграммы потоков данных (Sequence, Activity, State) – [`docs/diagrams/flow-diagrams.md`](docs/diagrams/flow-diagrams.md)
 
 **Результат:** Полностью интегрированная система, все тесты проходят.
 
 ---
 
-### Неделя 4 (07.07 — 12.07): Завершение и документация
+### Неделя 4 (07.07 – 12.07): Завершение и документация
 
 **Цель:** Подготовить документацию, анализ безопасности, презентацию.
 
 - [x] README.md (архитектура, quick start, API, тестирование)
 - [x] docs/analytics.sql (SQL-запросы для статистики)
 - [x] C4 диаграммы (Level 1-2) и диаграммы потоков
-- [x] Анализ безопасности — docs/security-report.md
+- [x] Анализ безопасности – docs/security-report.md
 - [ ] Подготовка презентации:
   - [ ] Слайды (архитектура, технологии, демо)
   - [ ] Демонстрация сценариев (happy path, ошибки)
@@ -150,7 +150,7 @@
 - ✅ README.md
 - ✅ C4 диаграммы (Level 1-2)
 - ✅ Диаграммы потоков (Sequence, Activity, State)
-- ✅ Security scan (Gitleaks, Semgrep) — docs/security-report.md
+- ✅ Security scan (Gitleaks, Semgrep) – docs/security-report.md
 
 ### Осталось:
 - ⏳ Подготовка презентации

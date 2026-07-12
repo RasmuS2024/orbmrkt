@@ -16,7 +16,7 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
 
     testImplementation(project(":common-dto"))
-testImplementation(testFixtures(project(":common-dto")))
+    testImplementation(testFixtures(project(":common-dto")))
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.kafka:spring-kafka-test")
     testImplementation("org.testcontainers:testcontainers")

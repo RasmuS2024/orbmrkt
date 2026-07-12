@@ -407,7 +407,7 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 ./gradlew check
 
 # Агрегированный отчёт по всем модулям
-./gradlew jacocoRootReport
+c
 ```
 
 - **Агрегированный отчёт:** `build/reports/jacoco/jacocoRootReport/html/index.html`

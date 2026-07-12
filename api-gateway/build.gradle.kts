@@ -2,10 +2,16 @@ plugins {
     id("org.springframework.boot")
 }
 
+dependencyManagement {
+    dependencies {
+        dependency("org.bouncycastle:bcprov-jdk18on:1.80.2")
+    }
+}
+
 dependencies {
 
 
-    implementation(platform("org.springframework.cloud:spring-cloud-dependencies:2025.0.0"))
+    implementation(platform("org.springframework.cloud:spring-cloud-dependencies:2025.0.3"))
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.17")

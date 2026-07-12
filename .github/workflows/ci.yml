@@ -1,0 +1,168 @@
+name: Build, Test, Security Scan & Deploy
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+
+      - uses: actions/setup-java@v5.3.0
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - uses: gradle/actions/setup-gradle@v6.2.0
+        with:
+          gradle-version: wrapper
+          cache-read-only: false
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build and test (incl. checkstyle)
+        run: ./gradlew build
+
+  security-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7.0.0
+
+      - uses: dorny/paths-filter@v4.0.1
+        id: changed-gradle-files
+        with:
+          filters: |
+            gradle:
+              - '**/*.gradle.kts'
+              - '**/gradle-wrapper.properties'
+
+      - uses: actions/setup-java@v5.3.0
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - uses: gradle/actions/setup-gradle@v6.2.0
+        with:
+          gradle-version: wrapper
+          cache-read-only: true
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Generate Gradle lockfiles for Trivy
+        if: steps.changed-gradle-files.outputs.gradle == 'true'
+        run: ./gradlew :api-gateway:dependencies :order-service:dependencies :payment-service:dependencies --write-locks
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+  push-docker:
+    if: github.event_name == 'push'
+    needs: [test, security-scan]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7.0.0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4.2.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v4.1.0
+
+      - name: Build and push api-gateway
+        uses: docker/build-push-action@v7.2.0
+        with:
+          context: ./api-gateway
+          file: ./api-gateway/Dockerfile
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/orbmrkt/api-gateway:latest
+            ghcr.io/${{ github.repository_owner }}/orbmrkt/api-gateway:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          push: true
+
+      - name: Build and push order-service
+        uses: docker/build-push-action@v7.2.0
+        with:
+          context: ./order-service
+          file: ./order-service/Dockerfile
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/orbmrkt/order-service:latest
+            ghcr.io/${{ github.repository_owner }}/orbmrkt/order-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          push: true
+
+      - name: Build and push payment-service
+        uses: docker/build-push-action@v7.2.0
+        with:
+          context: ./payment-service
+          file: ./payment-service/Dockerfile
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/orbmrkt/payment-service:latest
+            ghcr.io/${{ github.repository_owner }}/orbmrkt/payment-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          push: true
+
+  test-compose:
+    if: github.event_name == 'push'
+    needs: push-docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+
+      - name: Create .env file
+        run: |
+          cat > .env << 'EOF'
+          ORDER_SERVICE_DB_NAME=orbmrkt_orders
+          ORDER_SERVICE_DB_USER=postgres
+          ORDER_SERVICE_DB_PASSWORD=test_password_123
+          PAYMENT_SERVICE_DB_NAME=orbmrkt_payments
+          PAYMENT_SERVICE_DB_USER=postgres
+          PAYMENT_SERVICE_DB_PASSWORD=test_password_456
+          ORDER_SERVICE_PORT=8081
+          PAYMENT_SERVICE_PORT=8082
+          GATEWAY_PORT=8080
+          EOF
+
+      - name: Build and start services
+        run: docker compose up -d
+
+      - name: Wait for api-gateway
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8080/actuator/health && break
+            echo "Waiting for API... ($i)"
+            sleep 3
+          done
+          curl --fail http://localhost:8080/actuator/health || (echo "API not responding" && docker compose logs && exit 1)
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down

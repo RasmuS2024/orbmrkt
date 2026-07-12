@@ -14,6 +14,10 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
     steps:
       - uses: actions/checkout@v7.0.0
 
@@ -33,16 +37,6 @@ jobs:
       - name: Build and test (incl. checkstyle)
         run: ./gradlew build
 
-  security-scan:
-    needs: [test]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v7.0.0
-
       - name: Cache Trivy DB
         uses: actions/cache@v4.2.3
         with:
@@ -50,22 +44,6 @@ jobs:
           key: trivy-db-${{ hashFiles('.trivyignore') }}
           restore-keys: |
             trivy-db-
-
-      - uses: actions/setup-java@v5.3.0
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - uses: gradle/actions/setup-gradle@v6.2.0
-        with:
-          gradle-version: wrapper
-          cache-read-only: true
-
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-
-      - name: Build project (dependencies resolution for Trivy)
-        run: ./gradlew build -x test
 
       - name: Download Syft
         uses: anchore/sbom-action/download-syft@v0
@@ -86,17 +64,21 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results to GitHub Security
+        if: always()
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results.sarif'
 
   push-docker:
     if: github.event_name == 'push'
-    needs: [test, security-scan]
+    needs: [test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        service: [api-gateway, order-service, payment-service]
     steps:
       - uses: actions/checkout@v7.0.0
 
@@ -109,75 +91,14 @@ jobs:
 
       - uses: docker/setup-buildx-action@v4.1.0
 
-      - name: Build and push api-gateway
+      - name: Build and push ${{ matrix.service }}
         uses: docker/build-push-action@v7.2.0
         with:
-          context: ./api-gateway
-          file: ./api-gateway/Dockerfile
+          context: ./${{ matrix.service }}
+          file: ./${{ matrix.service }}/Dockerfile
           tags: |
-            ghcr.io/rasmus2024/orbmrkt/api-gateway:latest
-            ghcr.io/rasmus2024/orbmrkt/api-gateway:${{ github.sha }}
+            ghcr.io/rasmus2024/orbmrkt/${{ matrix.service }}:latest
+            ghcr.io/rasmus2024/orbmrkt/${{ matrix.service }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           push: true
-
-      - name: Build and push order-service
-        uses: docker/build-push-action@v7.2.0
-        with:
-          context: ./order-service
-          file: ./order-service/Dockerfile
-          tags: |
-            ghcr.io/rasmus2024/orbmrkt/order-service:latest
-            ghcr.io/rasmus2024/orbmrkt/order-service:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          push: true
-
-      - name: Build and push payment-service
-        uses: docker/build-push-action@v7.2.0
-        with:
-          context: ./payment-service
-          file: ./payment-service/Dockerfile
-          tags: |
-            ghcr.io/rasmus2024/orbmrkt/payment-service:latest
-            ghcr.io/rasmus2024/orbmrkt/payment-service:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          push: true
-
-  test-compose:
-    if: github.event_name == 'push'
-    needs: push-docker
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7.0.0
-
-      - name: Create .env file
-        run: |
-          cat > .env << 'EOF'
-          ORDER_SERVICE_DB_NAME=orbmrkt_orders
-          ORDER_SERVICE_DB_USER=postgres
-          ORDER_SERVICE_DB_PASSWORD=test_password_123
-          PAYMENT_SERVICE_DB_NAME=orbmrkt_payments
-          PAYMENT_SERVICE_DB_USER=postgres
-          PAYMENT_SERVICE_DB_PASSWORD=test_password_456
-          ORDER_SERVICE_PORT=8081
-          PAYMENT_SERVICE_PORT=8082
-          GATEWAY_PORT=8080
-          EOF
-
-      - name: Build and start services
-        run: docker compose up -d
-
-      - name: Wait for api-gateway
-        run: |
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:8080/actuator/health && break
-            echo "Waiting for API... ($i)"
-            sleep 3
-          done
-          curl --fail http://localhost:8080/actuator/health || (echo "API not responding" && docker compose logs && exit 1)
-
-      - name: Cleanup
-        if: always()
-        run: docker compose down

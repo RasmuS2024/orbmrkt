@@ -40,13 +40,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.0
 
-      - uses: dorny/paths-filter@v4.0.1
-        id: changed-gradle-files
+      - name: Cache Trivy DB
+        uses: actions/cache@v4.2.3
         with:
-          filters: |
-            gradle:
-              - '**/*.gradle.kts'
-              - '**/gradle-wrapper.properties'
+          path: ${{ runner.temp }}/.cache/trivy
+          key: trivy-db-${{ hashFiles('.trivyignore') }}
+          restore-keys: |
+            trivy-db-
 
       - uses: actions/setup-java@v5.3.0
         with:
@@ -62,7 +62,6 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Generate Gradle lockfiles for Trivy
-        if: steps.changed-gradle-files.outputs.gradle == 'true'
         run: ./gradlew :api-gateway:dependencies :order-service:dependencies :payment-service:dependencies --write-locks
 
       - name: Run Trivy vulnerability scanner
@@ -70,10 +69,17 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: '.'
-          format: 'table'
+          scanners: 'vuln'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
           exit-code: '1'
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: 'trivy-results.sarif'
 
   push-docker:
     if: github.event_name == 'push'
@@ -100,8 +106,8 @@ jobs:
           context: ./api-gateway
           file: ./api-gateway/Dockerfile
           tags: |
-            ghcr.io/${{ github.repository_owner }}/orbmrkt/api-gateway:latest
-            ghcr.io/${{ github.repository_owner }}/orbmrkt/api-gateway:${{ github.sha }}
+            ghcr.io/rasmus2024/orbmrkt/api-gateway:latest
+            ghcr.io/rasmus2024/orbmrkt/api-gateway:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           push: true
@@ -112,8 +118,8 @@ jobs:
           context: ./order-service
           file: ./order-service/Dockerfile
           tags: |
-            ghcr.io/${{ github.repository_owner }}/orbmrkt/order-service:latest
-            ghcr.io/${{ github.repository_owner }}/orbmrkt/order-service:${{ github.sha }}
+            ghcr.io/rasmus2024/orbmrkt/order-service:latest
+            ghcr.io/rasmus2024/orbmrkt/order-service:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           push: true
@@ -124,8 +130,8 @@ jobs:
           context: ./payment-service
           file: ./payment-service/Dockerfile
           tags: |
-            ghcr.io/${{ github.repository_owner }}/orbmrkt/payment-service:latest
-            ghcr.io/${{ github.repository_owner }}/orbmrkt/payment-service:${{ github.sha }}
+            ghcr.io/rasmus2024/orbmrkt/payment-service:latest
+            ghcr.io/rasmus2024/orbmrkt/payment-service:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           push: true

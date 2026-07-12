@@ -6,6 +6,8 @@
 ![Apache Kafka](https://img.shields.io/badge/Kafka-KRaft-black)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)
 
+> Полное описание цели и roadmap — в [PROJECT.md](PROJECT.md).
+
 ## Описание
 
 Микросервисная система управления заказами и платежами для продуктов спутниковых данных. Построена на event-driven архитектуре с Apache Kafka, использует паттерны Transactional Outbox и Inbox для надёжной доставки сообщений.
@@ -54,9 +56,6 @@ graph TB
     POutbox -->|"order.payment.result"| K
     K -->|"order.payment.result"| OInbox
     OCtrl --> OOutbox
-    OCtrl --> OInbox
-    PCtrl --> POutbox
-    PCtrl --> PInbox
 ```
 
 **Event flow:**

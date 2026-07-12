@@ -239,25 +239,22 @@ stateDiagram-v2
     PAID --> [*]
     PAYMENT_FAILED --> [*]
 
-    state CREATED {
-        [*] --> Валидация
-        Валидация --> Сохранение: OK
-        Валидация --> Ошибка: Невалидный payload/price/product_type
-        Сохранение --> [*]
-        Ошибка --> [*]
-    }
+    note right of CREATED
+        Валидация → Сохранение (OK)
+        Валидация → Ошибка (невалидный payload/price/product_type)
+    end note
 
-    state REJECTED {
+    note right of REJECTED
         failure_reason: UNKNOWN_PRODUCT_TYPE
         failure_reason: INVALID_PRICE
         failure_reason: INVALID_PAYLOAD
-    }
+    end note
 
-    state PAYMENT_FAILED {
+    note right of PAYMENT_FAILED
         failure_reason: INSUFFICIENT_BALANCE
         failure_reason: ACCOUNT_NOT_FOUND
         failure_reason: INTERNAL_ERROR
-    }
+    end note
 ```
 
 ### Статусы
@@ -318,7 +315,7 @@ flowchart TD
     
     SaveOutbox --> UpdateStatus[UPDATE orders<br/>status=PAYMENT_PENDING]
     
-    UpdateStatus --> ReturnResponse[201 Created<br/>{order_id, status}]
+    UpdateStatus --> ReturnResponse["201 Created<br/>{order_id, status}"]
     
     ReturnResponse --> WaitOutbox[Ожидание OutboxPollingWorker]
     

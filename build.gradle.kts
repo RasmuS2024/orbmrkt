@@ -38,6 +38,7 @@ subprojects {
         dependencies {
             dependency("org.apache.commons:commons-lang3:3.18.0")
             dependency("ch.qos.logback:logback-core:1.5.35")
+            dependency("com.fasterxml.jackson.core:jackson-databind:2.21.5")
         }
     }
 

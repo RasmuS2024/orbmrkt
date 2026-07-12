@@ -7,7 +7,7 @@
 ![Apache Kafka](https://img.shields.io/badge/Kafka-KRaft-black)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)
 
-> Полное описание цели и roadmap — в [PROJECT.md](PROJECT.md).
+> Полное описание цели и roadmap - в [PROJECT.md](PROJECT.md).
 
 ## Описание
 

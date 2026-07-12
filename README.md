@@ -1,8 +1,9 @@
 # orbmrkt
 
 ![Java 21](https://img.shields.io/badge/Java-21-blue)
-![Spring Boot 3.5](https://img.shields.io/badge/Spring%20Boot-3.5-green)
+![Spring Boot 3.5.16](https://img.shields.io/badge/Spring%20Boot-3.5.16-green)
 ![Gradle](https://img.shields.io/badge/Gradle-9-lightblue)
+![Checkstyle](https://img.shields.io/badge/Checkstyle-10.23.0-yellow)
 ![Apache Kafka](https://img.shields.io/badge/Kafka-KRaft-black)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)
 
@@ -105,6 +106,8 @@ java -jar ../../plantuml.jar -charset UTF-8 -tpdf c2-container.puml
 | Язык | Java 21 |
 | Фреймворк | Spring Boot 3.5.16 |
 | Сборка | Gradle 9 (Kotlin DSL) |
+| Checkstyle | 10.23.0 (Google Java Style, maxLineLength=120) |
+| SAST | Trivy (via Syft SBOM) |
 | База данных | PostgreSQL 16 |
 | Брокер сообщений | Apache Kafka (KRaft mode) |
 | API Gateway | Spring Cloud Gateway (WebFlux) |
@@ -173,8 +176,16 @@ orbmrkt/
 │   │       └── AccountServiceTest.java
 │   ├── build.gradle.kts
 │   └── Dockerfile
+├── .github/workflows/
+│   └── ci.yml                    # CI: test + push-docker (Trivy, Syft)
+├── config/checkstyle/
+│   └── checkstyle.xml            # Google Java Style, maxLineLength=120
 ├── docs/
-│   └── analytics.sql             # Пример аналитического запроса
+│   ├── analytics.sql             # Пример аналитического запроса
+│   ├── sca-report.md             # SCA: Before/After, accepted risk
+│   ├── security-report.md        # SAST: Semgrep Pro findings post-fix
+│   └── diagrams/
+│       └── flow-diagrams.md      # Sequence, Activity, State (Mermaid)
 ├── docker-compose.yml
 ├── .env.example
 ├── settings.gradle.kts
@@ -217,6 +228,10 @@ docker compose up -d kafka kafka-ui order-service-db payment-service-db
 ### Сборка
 
 ```bash
+# Полная сборка (Checkstyle + тесты + JaCoCo)
+./gradlew build
+
+# Без тестов
 ./gradlew build -x test
 ```
 
@@ -236,53 +251,68 @@ docker compose up -d kafka kafka-ui order-service-db payment-service-db
 | `PAYMENT_SERVICE_PORT` | `8082` | Порт платёжного сервиса |
 | `GATEWAY_PORT` | `8080` | Порт API Gateway |
 
-## API endpoints
+## REST API
 
-### Order Service (`:8081`)
+### Order Service
+
+Префикс: `/api/v1/orders`
 
 | Метод | Путь | Описание |
 |-------|------|----------|
-| `POST` | `/api/v1/orders` | Создать заказ |
-| `GET` | `/api/v1/orders` | Список заказов пользователя |
-| `GET` | `/api/v1/orders/{orderId}` | Детали заказа |
+| `POST` | `/orders` | Создать заказ (триггер асинхронной оплаты) |
+| `GET` | `/orders` | Список заказов текущего user_id |
+| `GET` | `/orders/{order_id}` | Детали и статус |
 
 **Заголовки:** `X-User-Id: 550e8400-e29b-41d4-a716-446655440000` (обязательный)
 
-**Создание заказа:**
+**Пример создания архивного заказа:**
 ```json
 {
   "product_type": "ARCHIVE",
   "price": 120,
   "payload": {
     "aoi": "POLYGON((...))",
-    "capture_date": "2026-06-01",
-    "sensor_type": "OPTICAL"
+    "capture_date": "2024-06-15",
+    "sensor_type": "MSI"
   }
 }
 ```
 
-### Payment Service (`:8082`)
-
-| Метод | Путь | Описание |
-|-------|------|----------|
-| `POST` | `/api/v1/payments/accounts` | Создать счёт (идемпотентно: 200 ОК, конкурентный race → 409) |
-| `POST` | `/api/v1/payments/accounts/top-up` | Пополнить баланс |
-| `GET` | `/api/v1/payments/accounts/balance` | Получить текущий баланс |
-
-**Заголовки:** `X-User-Id: 550e8400-e29b-41d4-a716-446655440000` (обязательный)
-
-**Пополнение баланса:**
+**Ответ (сразу после создания):**
 ```json
 {
-  "amount": 1000
+  "order_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "PAYMENT_PENDING",
+  "product_type": "ARCHIVE",
+  "price": 120,
+  "created_at": "2026-05-21T12:00:00Z"
 }
 ```
 
-**Формат ответа (успех):**
+### Payment Service
+
+Префикс: `/api/v1/payments`
+
+| Метод | Путь | Описание |
+|-------|------|----------|
+| `POST` | `/accounts` | Создать счёт для user_id из заголовка |
+| `POST` | `/accounts/top-up` | Пополнение |
+| `GET` | `/accounts/balance` | Баланс текущего пользователя |
+
+**Заголовки:** `X-User-Id: 550e8400-e29b-41d4-a716-446655440000` (обязательный)
+
+**Пример пополнения:**
+```json
+{
+  "amount": 5000
+}
+```
+
+**Ответ баланса:**
 ```json
 {
   "user_id": "user-42",
-  "balance": 880,
+  "balance": 5000,
   "currency": "geocredits"
 }
 ```
@@ -304,7 +334,7 @@ docker compose up -d kafka kafka-ui order-service-db payment-service-db
 
 Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `failureRateThreshold=50%`, `timeoutDuration=10s`. При недоступности сервиса возвращается `503`.
 
-Документация Swagger UI доступна в профиле по умолчанию: `http://localhost:8080/webjars/swagger-ui/index.html`
+Документация Swagger UI: `http://localhost:8080/webjars/swagger-ui/index.html`
 
 ## Kafka-события
 
@@ -389,6 +419,9 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 - `PaymentsIntegrationTest` – 11 integration tests: create account (duplicate/409), top-up (valid, invalid amount, negative, invalid JSON), get balance (success, account not found), 404
 - `AccountServiceTest` – 1 unit test (debit_sufficientFunds)
 
+**api-gateway** (11 tests):
+- `FallbackControllerTest`, `GlobalErrorHandlerTest` (8), `GatewayRoutingTest`, `CircuitBreakerIntegrationTest`
+
 ### Shared test utilities
 - `KafkaTestUtils` вынесен в `common-dto/src/testFixtures/java/orbmrkt/test/`
 - Подключается через `testImplementation(testFixtures(project(":common-dto")))`
@@ -427,7 +460,7 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 - Конфигурация через переменные окружения
 - Код на Java 21
 
-## План развития до MVP
+## Что дальше
 
 ### 1. Надёжность и наблюдаемость
 - **Структурированное логирование (JSON)** – `logstash-logback-encoder`, MDC (`userId`, `requestId`, `traceId`)
@@ -443,8 +476,3 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 - `api-spec/` – TypeSpec-спецификации
 - `frontend/` – React 19 + TypeScript 5 + Vite
 - Компоненты: UserSelector, AccountPanel, OrderPanel
-
-### 4. CI/CD
-- GitHub Actions – test, build, docker push
-- **SCA (Software Composition Analysis)** – проверка зависимостей на известные CVE (OWASP Dependency-Check или Snyk)
-- **Security scanning в CI/CD** – автоматический запуск Gitleaks + Semgrep + SCA при каждом push

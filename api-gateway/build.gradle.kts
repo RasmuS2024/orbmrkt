@@ -4,7 +4,7 @@ plugins {
 
 dependencyManagement {
     dependencies {
-        dependency("org.bouncycastle:bcprov-jdk18on:1.80.2")
+        dependency("org.bouncycastle:bcprov-jdk18on:1.84")
     }
 }
 

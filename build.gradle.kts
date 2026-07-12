@@ -1,7 +1,7 @@
 plugins {
     java
     jacoco
-    id("org.springframework.boot") version "3.5.14" apply false
+    id("org.springframework.boot") version "3.5.16" apply false
     id("io.spring.dependency-management") version "1.1.7" apply false
 }
 
@@ -32,6 +32,13 @@ subprojects {
     apply(plugin = "java")
     apply(plugin = "io.spring.dependency-management")
     apply(plugin = "jacoco")
+
+    configure<io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension> {
+        dependencies {
+            dependency("org.apache.commons:commons-lang3:3.18.0")
+            dependency("ch.qos.logback:logback-core:1.5.35")
+        }
+    }
 
     java {
         sourceCompatibility = JavaVersion.VERSION_21

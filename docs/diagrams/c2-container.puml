@@ -4,13 +4,13 @@
 skinparam defaultFontName "DejaVu Sans"
 skinparam defaultFontSize 14
 
-title Container Diagram - orbmrkt
+title Container Diagram - OrbitaMarket
 
 Person(operator, "Оператор ДЗЗ", "Оператор дистанционного зондирования Земли")
 Person(analyst, "Аналитик", "Аналитик геоданных")
 Person(admin, "Администратор", "Системный администратор")
 
-System_Boundary(orbmrkt, "orbmrkt") {
+System_Boundary(orbmrkt, "OrbitaMarket") {
     Container(gateway, "API Gateway", "Spring Cloud Gateway", "Единая точка входа, маршрутизация HTTP-запросов, Circuit Breaker, проброс X-User-Id")
     
     Container(order_service, "Order Service", "Spring Boot 3.5, Java 21", "Управление заказами, валидация payload, жизненный цикл статусов, Transactional Outbox/Inbox")

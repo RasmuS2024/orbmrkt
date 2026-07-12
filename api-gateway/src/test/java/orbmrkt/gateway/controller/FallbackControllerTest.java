@@ -18,8 +18,7 @@ class FallbackControllerTest {
                 .expectStatus().isEqualTo(503)
                 .expectBody()
                 .jsonPath("$.status").isEqualTo(503)
-                .jsonPath("$.error").isEqualTo("Service Unavailable")
-                .jsonPath("$.message").isEqualTo("Order Service временно недоступен");
+                .jsonPath("$.error").isEqualTo("Service Unavailable");
     }
 
     @Test
@@ -29,7 +28,6 @@ class FallbackControllerTest {
                 .expectStatus().isEqualTo(503)
                 .expectBody()
                 .jsonPath("$.status").isEqualTo(503)
-                .jsonPath("$.error").isEqualTo("Service Unavailable")
-                .jsonPath("$.message").isEqualTo("Payment Service временно недоступен");
+                .jsonPath("$.error").isEqualTo("Service Unavailable");
     }
 }

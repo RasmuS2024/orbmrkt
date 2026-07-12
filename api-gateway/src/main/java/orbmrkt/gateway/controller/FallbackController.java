@@ -19,7 +19,7 @@ public class FallbackController {
         body.put("timestamp", LocalDateTime.now().toString());
         body.put("status", HttpStatus.SERVICE_UNAVAILABLE.value());
         body.put("error", "Service Unavailable");
-        body.put("message", "Order Service временно недоступен");
+        body.put("message", "Order Service temporarily unavailable");
         return Mono.just(ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body));
     }
 
@@ -29,7 +29,7 @@ public class FallbackController {
         body.put("timestamp", LocalDateTime.now().toString());
         body.put("status", HttpStatus.SERVICE_UNAVAILABLE.value());
         body.put("error", "Service Unavailable");
-        body.put("message", "Payment Service временно недоступен");
+        body.put("message", "Payment Service temporarily unavailable");
         return Mono.just(ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body));
     }
 }

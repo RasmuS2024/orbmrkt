@@ -6,6 +6,8 @@ spring:
     hibernate:
       ddl-auto: create
     show-sql: false
+  mvc:
+    throw-exception-if-no-handler-found: true
   kafka:
     consumer:
       auto-offset-reset: earliest

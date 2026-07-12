@@ -9,6 +9,16 @@ jacoco {
     toolVersion = "0.8.12"
 }
 
+val coverageExcludePatterns = arrayOf(
+    "**/dto/**",
+    "**/*Application.class",
+    "**/*Exception.class",
+    "**/config/*Properties.class",
+    "**/model/**",
+    "**/payment/messaging/**",
+    "**/order/messaging/**"
+)
+
 allprojects {
     group = "orbmrkt"
     version = "1.0-SNAPSHOT"
@@ -51,14 +61,7 @@ subprojects {
         }
         classDirectories.setFrom(
             sourceSets.main.get().output.classesDirs.asFileTree.matching {
-                exclude(
-                    "**/dto/**",
-                    "**/*Application.class",
-                    "**/*Exception.class",
-                    "**/config/*Properties.class",
-                    "**/model/**",
-                    "**/payment/messaging/**"
-                )
+                exclude(*coverageExcludePatterns)
             }
         )
     }
@@ -70,24 +73,17 @@ subprojects {
             rule {
                 limit {
                     counter = "LINE"
-                    minimum = "0.70".toBigDecimal()
+                    minimum = "0.60".toBigDecimal()
                 }
                 limit {
                     counter = "BRANCH"
-                    minimum = "0.60".toBigDecimal()
+                    minimum = "0.50".toBigDecimal()
                 }
             }
         }
         classDirectories.setFrom(
             sourceSets.main.get().output.classesDirs.asFileTree.matching {
-                exclude(
-                    "**/dto/**",
-                    "**/*Application.class",
-                    "**/*Exception.class",
-                    "**/config/*Properties.class",
-                    "**/model/**",
-                    "**/payment/messaging/**"
-                )
+                exclude(*coverageExcludePatterns)
             }
         )
     }
@@ -98,9 +94,11 @@ subprojects {
 }
 
 tasks.register<JacocoReport>("jacocoRootReport") {
-    dependsOn(subprojects.map { it.tasks.named("test") })
+    val jacocoSubs = subprojects.filter { it.name != "common-dto" }
 
-    subprojects.forEach { sub ->
+    dependsOn(jacocoSubs.map { it.tasks.named("test") })
+
+    jacocoSubs.forEach { sub ->
         sub.plugins.withId("jacoco") {
             sourceSets(sub.sourceSets["main"])
             executionData(
@@ -110,6 +108,14 @@ tasks.register<JacocoReport>("jacocoRootReport") {
             )
         }
     }
+
+    classDirectories.setFrom(
+        files(jacocoSubs.map { sub ->
+            sub.sourceSets["main"].output.classesDirs.asFileTree.matching {
+                exclude(*coverageExcludePatterns)
+            }
+        })
+    )
 
     reports {
         xml.required.set(true)

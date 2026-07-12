@@ -43,23 +43,23 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
             exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
             body.put("status", 404);
             body.put("error", "Not Found");
-            body.put("message", "Запрашиваемый ресурс не найден");
+            body.put("message", "Requested resource not found");
         } else if (ex instanceof ConnectException || ex instanceof ConnectTimeoutException) {
             exchange.getResponse().setStatusCode(HttpStatus.BAD_GATEWAY);
             body.put("status", 502);
             body.put("error", "Bad Gateway");
-            body.put("message", "Сервис временно недоступен");
+            body.put("message", "Service temporarily unavailable");
         } else if (ex instanceof TimeoutException || ex instanceof ReadTimeoutException) {
             exchange.getResponse().setStatusCode(HttpStatus.GATEWAY_TIMEOUT);
             body.put("status", 504);
             body.put("error", "Gateway Timeout");
-            body.put("message", "Сервис не ответил вовремя");
+            body.put("message", "Service did not respond in time");
         } else if (ex instanceof WebClientResponseException webClientEx) {
             HttpStatusCode statusCode = webClientEx.getStatusCode();
             exchange.getResponse().setStatusCode(statusCode);
             body.put("status", statusCode.value());
             body.put("error", HttpStatus.valueOf(statusCode.value()).getReasonPhrase());
-            body.put("message", "Ошибка при обращении к сервису");
+            body.put("message", "Error while calling downstream service");
         } else if (ex instanceof ResponseStatusException responseStatusEx) {
             HttpStatusCode statusCode = responseStatusEx.getStatusCode();
             exchange.getResponse().setStatusCode(statusCode);
@@ -73,7 +73,7 @@ public class GlobalErrorHandler implements ErrorWebExceptionHandler {
             exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
             body.put("status", 500);
             body.put("error", "Internal Server Error");
-            body.put("message", "Внутренняя ошибка сервера");
+            body.put("message", "Internal server error");
         }
 
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);

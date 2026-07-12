@@ -1,4 +1,4 @@
-package orbmrkt.payment.messaging;
+package orbmrkt.test;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;

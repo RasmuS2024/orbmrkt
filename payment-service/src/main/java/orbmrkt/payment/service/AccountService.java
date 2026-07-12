@@ -51,7 +51,7 @@ public class AccountService {
     @Transactional(readOnly = true)
     public BalanceResponse getBalance(String userId) {
         AccountEntity account = accountRepository.findByUserId(userId)
-                .orElseThrow(() -> new PaymentException(HttpStatus.NOT_FOUND, "ACCOUNT_NOT_FOUND", "Счёт не найден"));
+                .orElseThrow(() -> new PaymentException(HttpStatus.NOT_FOUND, "ACCOUNT_NOT_FOUND", "Account not found"));
 
         return new BalanceResponse(account.getUserId(), account.getBalance(), "geocredits");
     }
@@ -59,12 +59,12 @@ public class AccountService {
     public long debit(UUID orderId, String userId, long amount) {
         if (processedPaymentRepository.existsByOrderId(orderId)) {
             AccountEntity account = accountRepository.findByUserId(userId)
-                    .orElseThrow(() -> new PaymentException(HttpStatus.NOT_FOUND, "ACCOUNT_NOT_FOUND", "Счёт не найден"));
+                    .orElseThrow(() -> new PaymentException(HttpStatus.NOT_FOUND, "ACCOUNT_NOT_FOUND", "Account not found"));
             return account.getBalance();
         }
 
         AccountEntity account = accountRepository.findByUserId(userId)
-                .orElseThrow(() -> new PaymentException(HttpStatus.NOT_FOUND, "ACCOUNT_NOT_FOUND", "Счёт не найден"));
+                .orElseThrow(() -> new PaymentException(HttpStatus.NOT_FOUND, "ACCOUNT_NOT_FOUND", "Account not found"));
 
         if (account.getBalance() < amount) {
             throw new PaymentException(HttpStatus.BAD_REQUEST, "INSUFFICIENT_BALANCE", "Insufficient balance");

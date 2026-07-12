@@ -1,5 +1,6 @@
 package orbmrkt.payment.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import orbmrkt.dto.ApiResponse;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -19,6 +20,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ex.getHttpStatus())
                 .body(ApiResponse.error(ex.getErrorCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("INVALID_USER_ID", "User ID must be a valid UUID"));
     }
 
     @ExceptionHandler(MissingRequestHeaderException.class)

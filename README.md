@@ -10,6 +10,21 @@
 
 Микросервисная система управления заказами и платежами для продуктов спутниковых данных. Построена на event-driven архитектуре с Apache Kafka, использует паттерны Transactional Outbox и Inbox для надёжной доставки сообщений.
 
+## Идентификация пользователя
+
+- **Формат `user_id`**: UUID (например, `550e8400-e29b-41d4-a716-446655440000`)
+- **Способ передачи**: заголовок `X-User-Id` (обязательный для всех запросов)
+- **Для локальной разработки и демо**: `550e8400-e29b-41d4-a716-446655440000`
+
+## Режимы операций
+
+| Операция | Режим |
+|----------|-------|
+| Создание счёта, пополнение, просмотр баланса | Синхронно (HTTP) |
+| Создание заказа | Синхронно (создаётся `CREATED`), затем асинхронно инициируется оплата |
+| Списание геокредитов | Асинхронно (Kafka-событие) |
+| Список заказов, детали заказа | Синхронно (HTTP) |
+
 ## Архитектура
 
 ```
@@ -111,7 +126,7 @@ orbmrkt/
 │   │   └── handler/GlobalErrorHandler.java
 │   ├── build.gradle.kts
 │   └── Dockerfile
-├── common-dto/                  # Общие DTO
+├── common-dto/                  # Общие DTO + shared test utilities
 │   ├── src/main/java/orbmrkt/dto/
 │   │   ├── ApiResponse.java             # Generic обёртка ответа
 │   │   ├── OrderStatus.java             # Статусы заказа (enum)
@@ -119,6 +134,8 @@ orbmrkt/
 │   │   ├── OrderPaymentRequested.java   # Событие: запрос оплаты
 │   │   ├── OrderPaymentCompleted.java   # Событие: оплата успешна
 │   │   └── OrderPaymentFailed.java      # Событие: оплата не удалась
+│   ├── src/testFixtures/java/orbmrkt/test/
+│   │   └── KafkaTestUtils.java         # Shared Kafka helper for all services
 │   └── build.gradle.kts
 ├── order-service/               # REST API заказов + Kafka producer/consumer
 │   ├── src/main/java/orbmrkt/
@@ -135,7 +152,8 @@ orbmrkt/
 │   │   └── ...
 │   ├── src/test/java/orbmrkt/order/
 │   │   ├── OrdersIntegrationTest.java
-│   │   └── messaging/KafkaTestUtils.java
+│   │   └── service/
+│   │       └── OrderServiceTest.java
 │   ├── build.gradle.kts
 │   └── Dockerfile
 ├── payment-service/             # REST API платежей + Kafka producer/consumer
@@ -153,7 +171,8 @@ orbmrkt/
 │   │   └── ...
 │   ├── src/test/java/orbmrkt/payment/
 │   │   ├── PaymentsIntegrationTest.java
-│   │   └── messaging/KafkaTestUtils.java
+│   │   └── service/
+│   │       └── AccountServiceTest.java
 │   ├── build.gradle.kts
 │   └── Dockerfile
 ├── docs/
@@ -229,7 +248,7 @@ docker compose up -d kafka kafka-ui order-service-db payment-service-db
 | `GET` | `/api/v1/orders` | Список заказов пользователя |
 | `GET` | `/api/v1/orders/{orderId}` | Детали заказа |
 
-**Заголовки:** `X-User-Id: <user_id>` (обязательный)
+**Заголовки:** `X-User-Id: 550e8400-e29b-41d4-a716-446655440000` (обязательный)
 
 **Создание заказа:**
 ```json
@@ -252,7 +271,7 @@ docker compose up -d kafka kafka-ui order-service-db payment-service-db
 | `POST` | `/api/v1/payments/accounts/top-up` | Пополнить баланс |
 | `GET` | `/api/v1/payments/accounts/balance` | Получить текущий баланс |
 
-**Заголовки:** `X-User-Id: <user_id>` (обязательный)
+**Заголовки:** `X-User-Id: 550e8400-e29b-41d4-a716-446655440000` (обязательный)
 
 **Пополнение баланса:**
 ```json
@@ -350,20 +369,36 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 # Все тесты
 ./gradlew test
 
-# Payment Service (2 сценария)
-./gradlew :payment-service:test --tests "orbmrkt.payment.PaymentsIntegrationTest"
+# Payment Service (11 integration + 1 unit)
+./gradlew :payment-service:test
 
-# Order Service (10 сценариев)
-./gradlew :order-service:test --tests "orbmrkt.order.OrdersIntegrationTest"
+# Order Service (16 integration + 3 unit)
+./gradlew :order-service:test
 ```
 
 - **Testcontainers** — PostgreSQL в Docker-контейнере
 - **Embedded Kafka** — встроенный Kafka-брокер для тестов
 - **JUnit 5** + Spring Boot Test
+- **`application-test.yml`** в каждом сервисе: `spring.mvc.throw-exception-if-no-handler-found=true`
 
-Тестовые сценарии:
-- **Payment:** create+top-up+balance, debit+completed
-- **Order:** create+PAID, PAYMENT_FAILED, MISSING_USER_ID, INVALID_PRICE, UNKNOWN_PRODUCT_TYPE, INVALID_PAYLOAD, ORDER_NOT_FOUND, wrong user, listOrders, duplicate eventId
+### Test counts by module
+
+**order-service** (16 integration + 3 unit):
+- `OrdersIntegrationTest` — 16 integration tests: CRUD, validation (missing headers, invalid JSON, zero/negative price, invalid/missing payload, unknown product type), product types (tasking, monitoring), wrong user, 404
+- `OrderServiceTest` — 3 unit tests (edge cases: zeroPrice, serializePayloadFails, savesRejectedOrder)
+
+**payment-service** (11 integration + 1 unit):
+- `PaymentsIntegrationTest` — 11 integration tests: create account (duplicate/409), top-up (valid, invalid amount, negative, invalid JSON), get balance (success, account not found), 404
+- `AccountServiceTest` — 1 unit test (debit_sufficientFunds)
+
+### Shared test utilities
+- `KafkaTestUtils` вынесен в `common-dto/src/testFixtures/java/orbmrkt/test/`
+- Подключается через `testImplementation(testFixtures(project(":common-dto")))`
+
+### Testing conventions
+- Exception handlers (400/404/409) — integration tests only (MockMvc end-to-end)
+- Global catch-all (`handleGeneral`) — intentionally not tested
+- Scheduled workers (`OutboxPollingWorker`) — excluded from JaCoCo
 
 ### Code Coverage (JaCoCo)
 
@@ -377,24 +412,41 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 
 - **Агрегированный отчёт:** `build/reports/jacoco/jacocoRootReport/html/index.html`
 - **Отчёт по модулю:** `{module}/build/reports/jacoco/test/html/index.html`
-- **Пороги покрытия:** LINE ≥ 60%, BRANCH ≥ 45% (`order-service`, `payment-service`)
-- **Исключён из проверки:** `common-dto` (нет тестов)
+- **Пороги покрытия:** LINE ≥ 60%, BRANCH ≥ 50%
+- **Исключён из проверки:** модуль `:common-dto`
+- **Исключённые паттерны классов:**
+  - `**/dto/**`, `**/*Application.class`, `**/*Exception.class`
+  - `**/config/*Properties.class`, `**/model/**`
+  - `**/payment/messaging/**`, `**/order/messaging/**` (scheduled workers)
 
 ## Соглашения проекта
 
 - REST prefix: `/api/v1/...`
-- `X-User-Id` — обязательный заголовок для всех запросов
+- `X-User-Id` — обязательный заголовок для всех запросов, формат UUID (например, `550e8400-e29b-41d4-a716-446655440000`)
 - Формат ответа: успех — flat JSON (DTO напрямую), ошибка — `ApiResponse` с `error_code`, `message`, `timestamp`
 - Поля: camelCase в Java, snake_case в JSON
 - Kafka event_id — UUID для дедупликации
 - Конфигурация через переменные окружения
 - Код на Java 21
 
-## Фронтенд (планируется)
+## План развития до MVP
 
-Архитектура: **TypeSpec → OpenAPI → React + Vite**
+### 1. Надёжность и наблюдаемость
+- **Структурированное логирование (JSON)** — `logstash-logback-encoder`, MDC (`userId`, `requestId`, `traceId`)
+- **Distributed tracing** — Micrometer Tracing + Brave/Zipkin
+- **Метрики** — Micrometer + Prometheus
 
-Реализация отложена. План включает:
+### 2. Безопасность
+- **Аутентификация** — JWT/OAuth2
+- **Rate limiting** — на API Gateway
+
+### 3. Фронтенд
+- **TypeSpec → OpenAPI → React + Vite**
 - `api-spec/` — TypeSpec-спецификации
 - `frontend/` — React 19 + TypeScript 5 + Vite
 - Компоненты: UserSelector, AccountPanel, OrderPanel
+
+### 4. CI/CD
+- GitHub Actions — test, build, docker push
+- **SCA (Software Composition Analysis)** — проверка зависимостей на известные CVE (OWASP Dependency-Check или Snyk)
+- **Security scanning в CI/CD** — автоматический запуск Gitleaks + Semgrep + SCA при каждом push

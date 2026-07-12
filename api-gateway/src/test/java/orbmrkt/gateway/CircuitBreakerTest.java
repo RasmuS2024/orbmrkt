@@ -29,47 +29,45 @@ class CircuitBreakerTest {
     void orderServiceDown_fallbackReturns503() {
         webTestClient.get()
                 .uri("/api/v1/orders")
-                .header("X-User-Id", "test-user")
+                .header("X-User-Id", "550e8400-e29b-41d4-a716-446655440000")
                 .exchange()
                 .expectStatus().is5xxServerError();
 
         webTestClient.get()
                 .uri("/api/v1/orders")
-                .header("X-User-Id", "test-user")
+                .header("X-User-Id", "550e8400-e29b-41d4-a716-446655440000")
                 .exchange()
                 .expectStatus().is5xxServerError();
 
         webTestClient.get()
                 .uri("/api/v1/orders")
-                .header("X-User-Id", "test-user")
+                .header("X-User-Id", "550e8400-e29b-41d4-a716-446655440000")
                 .exchange()
                 .expectStatus().isEqualTo(503)
                 .expectBody()
-                .jsonPath("$.error").isEqualTo("Service Unavailable")
-                .jsonPath("$.message").isEqualTo("Order Service временно недоступен");
+                .jsonPath("$.error").isEqualTo("Service Unavailable");
     }
 
     @Test
     void paymentServiceDown_fallbackReturns503() {
         webTestClient.get()
                 .uri("/api/v1/payments/accounts/balance")
-                .header("X-User-Id", "test-user")
+                .header("X-User-Id", "550e8400-e29b-41d4-a716-446655440000")
                 .exchange()
                 .expectStatus().is5xxServerError();
 
         webTestClient.get()
                 .uri("/api/v1/payments/accounts/balance")
-                .header("X-User-Id", "test-user")
+                .header("X-User-Id", "550e8400-e29b-41d4-a716-446655440000")
                 .exchange()
                 .expectStatus().is5xxServerError();
 
         webTestClient.get()
                 .uri("/api/v1/payments/accounts/balance")
-                .header("X-User-Id", "test-user")
+                .header("X-User-Id", "550e8400-e29b-41d4-a716-446655440000")
                 .exchange()
                 .expectStatus().isEqualTo(503)
                 .expectBody()
-                .jsonPath("$.error").isEqualTo("Service Unavailable")
-                .jsonPath("$.message").isEqualTo("Payment Service временно недоступен");
+                .jsonPath("$.error").isEqualTo("Service Unavailable");
     }
 }

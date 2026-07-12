@@ -5,6 +5,13 @@ build/
 !**/src/test/**/build/
 .kotlin
 report.json
+gitleaks-git-report.json
+gitleaks-report.json
+semgrep-report-extended.json
+semgrep-report-pro.json
+semgrep-report.json
+grype-report.json
+sbom.json
 
 ### Environment ###
 .env

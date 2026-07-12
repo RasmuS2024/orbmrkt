@@ -3,10 +3,14 @@ package orbmrkt.order.messaging;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import orbmrkt.dto.OrderPaymentCompleted;
+import orbmrkt.dto.OrderPaymentFailed;
+import orbmrkt.dto.OrderPaymentRequested;
 import orbmrkt.order.config.OutboxProperties;
 import orbmrkt.order.model.OutboxEntity;
 import orbmrkt.order.repository.InboxRepository;
 import orbmrkt.order.repository.OutboxRepository;
+import java.util.Map;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,6 +25,12 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class OutboxPollingWorker {
+
+    private static final Map<String, Class<?>> EVENT_TYPE_MAP = Map.of(
+            "orbmrkt.dto.OrderPaymentRequested", OrderPaymentRequested.class,
+            "orbmrkt.dto.OrderPaymentCompleted", OrderPaymentCompleted.class,
+            "orbmrkt.dto.OrderPaymentFailed", OrderPaymentFailed.class
+    );
 
     private final OutboxRepository outboxRepository;
     private final InboxRepository inboxRepository;
@@ -49,7 +59,11 @@ public class OutboxPollingWorker {
                 continue;
             }
             try {
-                Class<?> type = Class.forName(event.getEventType());
+                Class<?> type = EVENT_TYPE_MAP.get(event.getEventType());
+                if (type == null) {
+                    log.warn("Unknown event type: eventId={}, eventType={}", event.getEventId(), event.getEventType());
+                    continue;
+                }
                 Object payload = objectMapper.readValue(event.getPayload(), type);
                 kafkaTemplate.send(event.getTopic(), event.getEventId().toString(), payload).get();
                 event.setProcessed(true);

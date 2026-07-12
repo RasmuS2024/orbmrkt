@@ -2,7 +2,6 @@ package orbmrkt.payment;
 
 import orbmrkt.dto.ApiResponse;
 import orbmrkt.payment.dto.AccountResponse;
-import orbmrkt.payment.dto.BalanceResponse;
 import orbmrkt.payment.repository.AccountRepository;
 import orbmrkt.payment.repository.InboxRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +24,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -70,74 +68,6 @@ class PaymentsIntegrationTest {
         h.set("X-User-Id", USER_ID);
         h.setContentType(MediaType.APPLICATION_JSON);
         return h;
-    }
-
-    @Test
-    void createAccount_success() {
-        var response = rest.exchange(
-                "/api/v1/payments/accounts",
-                HttpMethod.POST,
-                new HttpEntity<>(headers()),
-                AccountResponse.class);
-
-        AccountResponse body = response.getBody();
-        assertNotNull(body);
-        assertEquals(USER_ID, body.getUserId());
-        assertEquals(0, body.getBalance());
-        assertNotNull(body.getCreatedAt());
-    }
-
-    @Test
-    void topUp_success() {
-        rest.exchange(
-                "/api/v1/payments/accounts",
-                HttpMethod.POST,
-                new HttpEntity<>(headers()),
-                AccountResponse.class);
-
-        var topUp = new orbmrkt.payment.dto.TopUpRequest();
-        topUp.setAmount(500);
-
-        var response = rest.exchange(
-                "/api/v1/payments/accounts/top-up",
-                HttpMethod.POST,
-                new HttpEntity<>(topUp, headers()),
-                BalanceResponse.class);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        BalanceResponse body = response.getBody();
-        assertNotNull(body);
-        assertEquals(USER_ID, body.getUserId());
-        assertEquals(500, body.getBalance());
-        assertEquals("geocredits", body.getCurrency());
-    }
-
-    @Test
-    void getBalance_returnsCurrentBalance() {
-        rest.exchange(
-                "/api/v1/payments/accounts",
-                HttpMethod.POST,
-                new HttpEntity<>(headers()),
-                AccountResponse.class);
-
-        var topUp = new orbmrkt.payment.dto.TopUpRequest();
-        topUp.setAmount(500);
-        rest.exchange(
-                "/api/v1/payments/accounts/top-up",
-                HttpMethod.POST,
-                new HttpEntity<>(topUp, headers()),
-                BalanceResponse.class);
-
-        var response = rest.exchange(
-                "/api/v1/payments/accounts/balance",
-                HttpMethod.GET,
-                new HttpEntity<>(headers()),
-                BalanceResponse.class);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        BalanceResponse body = response.getBody();
-        assertNotNull(body);
-        assertEquals(500, body.getBalance());
     }
 
     @Test

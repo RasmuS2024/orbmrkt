@@ -253,7 +253,7 @@ docker compose up -d kafka kafka-ui order-service-db payment-service-db
 
 ## REST API
 
-### Order Service
+### Order Service (сервис заказов)
 
 Префикс: `/api/v1/orders`
 
@@ -289,7 +289,7 @@ docker compose up -d kafka kafka-ui order-service-db payment-service-db
 }
 ```
 
-### Payment Service
+### Payment Service (платёжный сервис)
 
 Префикс: `/api/v1/payments`
 
@@ -409,29 +409,40 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 - **JUnit 5** + Spring Boot Test
 - **`application-test.yml`** в каждом сервисе: `spring.mvc.throw-exception-if-no-handler-found=true`
 
-### Test counts by module
+### End-to-End (E2E) tests
 
-**order-service** (16 integration + 3 unit):
-- `OrdersIntegrationTest` – 16 integration tests: CRUD, validation (missing headers, invalid JSON, zero/negative price, invalid/missing payload, unknown product type), product types (tasking, monitoring), wrong user, 404
+Отдельный репозиторий с автотестами (REST API + Kafka-события, Testcontainers):
+[github.com/RasmuS2024/orbmrkt-autotests](https://github.com/RasmuS2024/orbmrkt-autotests)
+
+**Account API (3 теста):** create account, top-up, balance — все happy-path.
+**Order API (3 теста):** create order, list orders, get order — все happy-path.
+**Cross-service (6 тестов):** полные сценарии через Gateway (happy path, insufficient funds, idempotent order, two orders, duplicate account, concurrent operations).
+
+Happy-path тесты вынесены в E2E и удалены из модульных тестов (избежание дублирования).
+
+### Статистика тестов по модулям
+
+**order-service** (14 integration + 3 unit):
+- `OrdersIntegrationTest` – 14 integration tests: validation (missing headers, invalid JSON, zero/negative price, invalid/missing payload, unknown product type), product types (tasking, monitoring), Kafka consumers, inbox dedup, user-scoped list, wrong user, 404
 - `OrderServiceTest` – 3 unit tests (edge cases: zeroPrice, serializePayloadFails, savesRejectedOrder)
 
-**payment-service** (11 integration + 1 unit):
-- `PaymentsIntegrationTest` – 11 integration tests: create account (duplicate/409), top-up (valid, invalid amount, negative, invalid JSON), get balance (success, account not found), 404
+**payment-service** (8 integration + 1 unit):
+- `PaymentsIntegrationTest` – 8 integration tests: error/boundary (missing user ID, invalid amount, negative amount, invalid JSON, account not found, invalid user ID, 404)
 - `AccountServiceTest` – 1 unit test (debit_sufficientFunds)
 
 **api-gateway** (11 tests):
 - `FallbackControllerTest`, `GlobalErrorHandlerTest` (8), `GatewayRoutingTest`, `CircuitBreakerIntegrationTest`
 
-### Shared test utilities
+### Общие утилиты тестирования
 - `KafkaTestUtils` вынесен в `common-dto/src/testFixtures/java/orbmrkt/test/`
 - Подключается через `testImplementation(testFixtures(project(":common-dto")))`
 
-### Testing conventions
+### Соглашения по тестированию
 - Exception handlers (400/404/409) – integration tests only (MockMvc end-to-end)
 - Global catch-all (`handleGeneral`) – intentionally not tested
 - Scheduled workers (`OutboxPollingWorker`) – excluded from JaCoCo
 
-### Code Coverage (JaCoCo)
+### Покрытие кода (JaCoCo)
 
 ```bash
 # Тесты + отчёты + проверка порогов

@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -195,30 +194,6 @@ class OrdersIntegrationTest {
                 new ParameterizedTypeReference<ApiResponse<Void>>() {});
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("INVALID_PAYLOAD", response.getBody().getErrorCode());
-    }
-
-    @Test
-    void createOrder_success_returns201AndFullBody() {
-        var request = new CreateOrderRequest();
-        request.setProductType(ProductType.ARCHIVE);
-        request.setPrice(BigDecimal.valueOf(500));
-        request.setPayload(Map.of("aoi", "test-area", "capture_date", "2026-01-01", "sensor_type", "optical"));
-
-        var response = rest.exchange("/api/v1/orders/orders", HttpMethod.POST,
-                new HttpEntity<>(request, headers()), OrderResponse.class);
-
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertThat(response.getBody().getStatus()).isEqualTo("PAYMENT_PENDING");
-    }
-
-    @Test
-    void getOrder_success_returnsOrder() {
-        OrderResponse created = createOrder();
-        var response = rest.exchange("/api/v1/orders/orders/" + created.getOrderId(),
-                HttpMethod.GET, new HttpEntity<>(headers()), OrderResponse.class);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
     }
 
     @Test

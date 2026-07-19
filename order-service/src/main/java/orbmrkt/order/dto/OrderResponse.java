@@ -3,7 +3,6 @@ package orbmrkt.order.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -18,7 +17,7 @@ public class OrderResponse {
     @JsonProperty("product_type")
     private String productType;
 
-    private BigDecimal price;
+    private long price;
 
     @JsonProperty("created_at")
     private Instant createdAt;

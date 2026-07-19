@@ -42,7 +42,7 @@ public class PaymentEventConsumer {
 
         try {
             long newBalance = accountService.debit(
-                    event.getOrderId(), event.getUserId(), event.getAmount().longValue());
+                    event.getOrderId(), event.getUserId(), event.getAmount());
             paymentEventPublisher.publishPaymentCompleted(
                     event.getOrderId(), event.getUserId(), event.getAmount(), newBalance);
             log.info("Payment completed for orderId: {}", event.getOrderId());

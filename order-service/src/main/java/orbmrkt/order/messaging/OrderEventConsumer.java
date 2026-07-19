@@ -13,6 +13,7 @@ import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
 
 @Slf4j
 @Component
@@ -25,6 +26,7 @@ public class OrderEventConsumer {
 
     @Transactional
     @KafkaHandler
+    @CacheEvict(value = "orderLists", key = "#event.userId")
     public void handlePaymentCompleted(OrderPaymentCompleted event) {
         if (inboxRepository.existsByEventId(event.getEventId())) {
             log.debug("Duplicate event skipped: eventId={}", event.getEventId());
@@ -50,6 +52,7 @@ public class OrderEventConsumer {
 
     @Transactional
     @KafkaHandler
+    @CacheEvict(value = "orderLists", key = "#event.userId")
     public void handlePaymentFailed(OrderPaymentFailed event) {
         if (inboxRepository.existsByEventId(event.getEventId())) {
             log.debug("Duplicate event skipped: eventId={}", event.getEventId());

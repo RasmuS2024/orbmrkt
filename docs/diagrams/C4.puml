@@ -1,0 +1,6 @@
+!$ELEMENT_FONT_COLOR ?= "#FFFFFF"
+!$BOUNDARY_COLOR ?= "#444444"
+!$BOUNDARY_BG_COLOR ?= "transparent"
+!$BOUNDARY_BORDER_STYLE ?= "dashed"
+!$DEFAULT_SHAPE ?= "rounded_box"
+!$LEGEND_TITLE_COLOR ?= "#444444"

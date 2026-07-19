@@ -82,6 +82,19 @@ services:
     networks:
       - app-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
   order-service:
     restart: unless-stopped
     build:
@@ -99,6 +112,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - app-network
     healthcheck:
@@ -106,7 +121,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
-      start_period: 60s
+      start_period: 90s
 
   payment-service:
     restart: unless-stopped
@@ -125,6 +140,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - app-network
     healthcheck:
@@ -132,7 +149,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
-      start_period: 60s
+      start_period: 90s
 
   api-gateway:
     restart: unless-stopped

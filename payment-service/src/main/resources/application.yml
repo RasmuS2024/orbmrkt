@@ -32,6 +32,19 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  cache:
+    type: redis
+  data:
+    redis:
+      host: redis
+      port: 6379
+      timeout: 2s
+      repositories:
+        enabled: false
+
+depends_on:
+  redis:
+    condition: service_healthy
 
 outbox:
   polling-interval-ms: 500

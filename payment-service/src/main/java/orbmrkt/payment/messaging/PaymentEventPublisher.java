@@ -9,7 +9,6 @@ import orbmrkt.payment.model.OutboxEntity;
 import orbmrkt.payment.repository.OutboxRepository;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 @Slf4j
@@ -22,7 +21,7 @@ public class PaymentEventPublisher {
 
     private static final String TOPIC_PAYMENT_RESULT = "order.payment.result";
 
-    public void publishPaymentCompleted(UUID orderId, String userId, BigDecimal amount, long newBalance) {
+    public void publishPaymentCompleted(UUID orderId, String userId, long amount, long newBalance) {
         OrderPaymentCompleted event = new OrderPaymentCompleted();
         event.setEventId(UUID.randomUUID());
         event.setOrderId(orderId);

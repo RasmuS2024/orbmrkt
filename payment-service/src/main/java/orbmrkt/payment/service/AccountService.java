@@ -11,6 +11,8 @@ import orbmrkt.payment.repository.ProcessedPaymentRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.util.UUID;
 
@@ -34,6 +36,7 @@ public class AccountService {
     }
 
     @Transactional
+    @CacheEvict(value = "balances", key = "#userId")
     public BalanceResponse topUp(String userId, long amount) {
         if (amount <= 0) {
             throw new PaymentException(HttpStatus.BAD_REQUEST, "INVALID_AMOUNT", "Amount must be greater than zero");
@@ -50,6 +53,7 @@ public class AccountService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "balances", key = "#userId")
     public BalanceResponse getBalance(String userId) {
         AccountEntity account = accountRepository.findByUserId(userId)
                 .orElseThrow(() -> new PaymentException(
@@ -58,6 +62,7 @@ public class AccountService {
         return new BalanceResponse(account.getUserId(), account.getBalance(), "geocredits");
     }
 
+    @CacheEvict(value = "balances", key = "#userId")
     public long debit(UUID orderId, String userId, long amount) {
         if (processedPaymentRepository.existsByOrderId(orderId)) {
             AccountEntity account = accountRepository.findByUserId(userId)

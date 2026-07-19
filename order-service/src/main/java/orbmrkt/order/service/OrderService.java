@@ -18,8 +18,8 @@ import orbmrkt.order.repository.OrderRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,7 +44,7 @@ public class OrderService {
             order.setUserId(userId);
             order.setProductType(request.getProductType() != null
                     ? request.getProductType().name() : "UNKNOWN");
-            order.setPrice(request.getPrice() != null ? request.getPrice() : BigDecimal.ZERO);
+            order.setPrice(request.getPrice());
             order.setPayload(request.getPayload() != null
                     ? serializePayload(request.getPayload()) : "{}");
             order.setStatus(OrderStatus.REJECTED.name());
@@ -86,6 +86,7 @@ public class OrderService {
         return toResponse(order);
     }
 
+    @Cacheable(value = "orderLists", key = "#userId")
     public List<OrderResponse> listOrders(String userId) {
         return repository.findAllByUserId(userId).stream()
                 .map(this::toResponse)
@@ -96,7 +97,7 @@ public class OrderService {
         if (request.getProductType() == null) {
             return "UNKNOWN_PRODUCT_TYPE";
         }
-        if (request.getPrice() == null || request.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+        if (request.getPrice() <= 0) {
             return "INVALID_PRICE";
         }
         if (request.getPayload() == null || request.getPayload().isEmpty()) {

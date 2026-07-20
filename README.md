@@ -50,10 +50,16 @@ graph TB
         PDB[("PostgreSQL<br/>orbmrkt_payments")]
     end
 
+    R["Redis 7<br/>кеш: orderLists (OrderService),<br/>balances (AccountService)"]
+
     K["Kafka (KRaft)<br/>order.payment.*"]
+
+    R ~~~ K
 
     GW -->|"/api/v1/orders/**"| OCtrl
     GW -->|"/api/v1/payments/**"| PCtrl
+    OS -.->|"кэш"| R
+    PS -.->|"кэш"| R
     OOutbox -->|"order.payment.requested"| K
     K -->|"order.payment.requested"| PInbox
     POutbox -->|"order.payment.result"| K
@@ -94,6 +100,7 @@ graph TB
 | SAST | Trivy (via Syft SBOM) |
 | База данных | PostgreSQL 16 |
 | Брокер сообщений | Apache Kafka (KRaft mode) |
+| Кеширование | Redis 7 (TTL 10с, JSON-сериализация) |
 | API Gateway | Spring Cloud Gateway (WebFlux) |
 | Circuit Breaker | Resilience4j |
 | Документация | Springdoc OpenAPI (springdoc-openapi-starter-webflux-ui) |
@@ -292,7 +299,6 @@ Happy-path тесты вынесены в E2E и удалены из модул�
 - **Структурированное логирование (JSON)** – `logstash-logback-encoder`, MDC (`userId`, `requestId`, `traceId`)
 - **Distributed tracing** – Micrometer Tracing + Brave/Zipkin
 - **Метрики** – Micrometer + Prometheus
-- **Кеширование** – Redis (кэширование баланса и списка заказов для снижения нагрузки на БД)
 
 ### 2. Безопасность
 - **Аутентификация** – JWT/OAuth2

@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -25,8 +24,8 @@ public class OrderEntity {
     @Column(nullable = false)
     private String productType;
 
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal price;
+    @Column(nullable = false)
+    private long price;
 
     @Column(nullable = false)
     private String status;

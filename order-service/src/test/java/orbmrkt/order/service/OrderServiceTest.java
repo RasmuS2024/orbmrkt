@@ -17,7 +17,6 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
 
@@ -55,7 +54,7 @@ class OrderServiceTest {
     void createOrder_zeroPrice_throwsException() {
         CreateOrderRequest request = new CreateOrderRequest();
         request.setProductType(ProductType.ARCHIVE);
-        request.setPrice(BigDecimal.ZERO);
+        request.setPrice(0L);
         OrderException ex = assertThrows(OrderException.class,
                 () -> orderService.createOrder("user", request));
         assertEquals("INVALID_PRICE", ex.getErrorCode());
@@ -72,7 +71,7 @@ class OrderServiceTest {
 
         CreateOrderRequest request = new CreateOrderRequest();
         request.setProductType(ProductType.ARCHIVE);
-        request.setPrice(BigDecimal.valueOf(500));
+        request.setPrice(500L);
         request.setPayload(Map.of("aoi", "area1", "capture_date", "2026-01-01", "sensor_type", "optical"));
 
         OrderException ex = assertThrows(OrderException.class,
@@ -84,7 +83,7 @@ class OrderServiceTest {
     void createOrder_savesRejectedOrderOnValidationFailure() {
         CreateOrderRequest request = new CreateOrderRequest();
         request.setProductType(ProductType.ARCHIVE);
-        request.setPrice(BigDecimal.valueOf(500));
+        request.setPrice(500L);
 
         assertThrows(OrderException.class, () -> orderService.createOrder("user", request));
 

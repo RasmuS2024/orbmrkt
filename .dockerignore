@@ -1,0 +1,10 @@
+.git/
+.gitattributes
+.gitignore
+.env*
+data/
+node_modules/
+*.md
+build/
+.gradle/
+.github/

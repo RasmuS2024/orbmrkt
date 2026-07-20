@@ -29,7 +29,6 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -95,7 +94,7 @@ class OrdersIntegrationTest {
     private OrderResponse createOrder() {
         var request = new CreateOrderRequest();
         request.setProductType(ProductType.ARCHIVE);
-        request.setPrice(BigDecimal.valueOf(500));
+        request.setPrice(500L);
         request.setPayload(Map.of(
                 "aoi", "test-area",
                 "capture_date", "2026-01-01",
@@ -126,7 +125,7 @@ class OrdersIntegrationTest {
         event.setEventId(UUID.randomUUID());
         event.setOrderId(order.getOrderId());
         event.setUserId(USER_ID);
-        event.setAmount(BigDecimal.valueOf(500));
+        event.setAmount(500L);
         event.setNewBalance(500);
         kafka.send("order.payment.result", event.getOrderId().toString(), event);
 
@@ -157,7 +156,7 @@ class OrdersIntegrationTest {
         event.setEventId(UUID.randomUUID());
         event.setOrderId(order.getOrderId());
         event.setUserId(USER_ID);
-        event.setAmount(BigDecimal.valueOf(500));
+        event.setAmount(500L);
         event.setNewBalance(500);
 
         kafka.send("order.payment.result", event.getOrderId().toString(), event);
@@ -172,7 +171,7 @@ class OrdersIntegrationTest {
     void createOrder_missingUserId_returns400() {
         var request = new CreateOrderRequest();
         request.setProductType(ProductType.ARCHIVE);
-        request.setPrice(BigDecimal.valueOf(500));
+        request.setPrice(500L);
         request.setPayload(Map.of("aoi", "test"));
 
         var response = rest.exchange("/api/v1/orders/orders", HttpMethod.POST,
@@ -186,7 +185,7 @@ class OrdersIntegrationTest {
     void createOrder_invalidPayload_returns400() {
         var request = new CreateOrderRequest();
         request.setProductType(ProductType.ARCHIVE);
-        request.setPrice(BigDecimal.valueOf(500));
+        request.setPrice(500L);
         request.setPayload(Map.of());
 
         var response = rest.exchange("/api/v1/orders/orders", HttpMethod.POST,
@@ -221,7 +220,7 @@ class OrdersIntegrationTest {
         h.setContentType(MediaType.APPLICATION_JSON);
         var request = new CreateOrderRequest();
         request.setProductType(ProductType.ARCHIVE);
-        request.setPrice(BigDecimal.valueOf(500));
+        request.setPrice(500L);
         request.setPayload(Map.of("aoi", "test"));
 
         var response = rest.exchange("/api/v1/orders/orders", HttpMethod.POST,
@@ -235,7 +234,7 @@ class OrdersIntegrationTest {
     void listOrders_returnsOnlyUserOrders() {
         var request = new CreateOrderRequest();
         request.setProductType(ProductType.ARCHIVE);
-        request.setPrice(BigDecimal.valueOf(300));
+        request.setPrice(300L);
         request.setPayload(Map.of("aoi", "other-area", "capture_date", "2026-02-01", "sensor_type", "sar"));
         rest.exchange("/api/v1/orders/orders", HttpMethod.POST,
                 new HttpEntity<>(request, headers("00000000-0000-0000-0000-000000000001")), OrderResponse.class);
@@ -277,7 +276,7 @@ class OrdersIntegrationTest {
     void createOrder_zeroPrice_returns400() {
         var request = new CreateOrderRequest();
         request.setProductType(ProductType.ARCHIVE);
-        request.setPrice(BigDecimal.ZERO);
+        request.setPrice(0L);
         request.setPayload(Map.of("aoi", "test"));
 
         var response = rest.exchange("/api/v1/orders/orders", HttpMethod.POST,
@@ -292,7 +291,7 @@ class OrdersIntegrationTest {
     void createOrder_negativePrice_returns400() {
         var request = new CreateOrderRequest();
         request.setProductType(ProductType.ARCHIVE);
-        request.setPrice(BigDecimal.valueOf(-100));
+        request.setPrice(-100L);
         request.setPayload(Map.of("aoi", "test"));
 
         var response = rest.exchange("/api/v1/orders/orders", HttpMethod.POST,
@@ -318,7 +317,7 @@ class OrdersIntegrationTest {
     void createOrder_taskingValid_returns201() {
         var request = new CreateOrderRequest();
         request.setProductType(ProductType.TASKING);
-        request.setPrice(BigDecimal.valueOf(1000));
+        request.setPrice(1000L);
         request.setPayload(Map.of(
                 "aoi", "tasking-area",
                 "time_window", Map.of("from", "2026-01-01T00:00:00Z", "to", "2026-01-02T00:00:00Z"),
@@ -338,7 +337,7 @@ class OrdersIntegrationTest {
     void createOrder_monitoringValid_returns201() {
         var request = new CreateOrderRequest();
         request.setProductType(ProductType.MONITORING);
-        request.setPrice(BigDecimal.valueOf(1500));
+        request.setPrice(1500L);
         request.setPayload(Map.of(
                 "aoi", "monitoring-area",
                 "cadence", "daily",
@@ -359,7 +358,7 @@ class OrdersIntegrationTest {
     void createOrder_taskingInvalidPayload_returns400() {
         var request = new CreateOrderRequest();
         request.setProductType(ProductType.TASKING);
-        request.setPrice(BigDecimal.valueOf(500));
+        request.setPrice(500L);
         request.setPayload(Map.of("aoi", "test"));
 
         var response = rest.exchange("/api/v1/orders/orders", HttpMethod.POST,
@@ -374,7 +373,7 @@ class OrdersIntegrationTest {
     void createOrder_monitoringInvalidPayload_returns400() {
         var request = new CreateOrderRequest();
         request.setProductType(ProductType.MONITORING);
-        request.setPrice(BigDecimal.valueOf(500));
+        request.setPrice(500L);
         request.setPayload(Map.of("aoi", "test"));
 
         var response = rest.exchange("/api/v1/orders/orders", HttpMethod.POST,

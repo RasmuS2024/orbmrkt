@@ -2,7 +2,6 @@ package orbmrkt.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import java.math.BigDecimal;
 import java.util.UUID;
 
 @Data
@@ -16,7 +15,7 @@ public class OrderPaymentCompleted {
     @JsonProperty("user_id")
     private String userId;
 
-    private BigDecimal amount;
+    private long amount;
 
     @JsonProperty("new_balance")
     private long newBalance;

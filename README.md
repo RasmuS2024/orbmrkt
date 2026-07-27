@@ -20,6 +20,7 @@
 - **Формат `user_id`**: UUID (например, `550e8400-e29b-41d4-a716-446655440000`)
 - **Способ передачи**: заголовок `X-User-Id` (обязательный для всех запросов)
 - **Для локальной разработки и демо**: `550e8400-e29b-41d4-a716-446655440000`
+- **Swagger UI**: кнопка Authorize -> X-User-Id (Header), введите UUID -> применяется ко всем запросам
 
 ## Режимы операций
 
@@ -73,8 +74,8 @@ graph TB
 
 Подробные диаграммы доступны в [`docs/diagrams/`](docs/diagrams/):
 
-- **C1 System Context** — [`docs/diagrams/c1-context.puml`](docs/diagrams/c1-context.puml) / [PDF](docs/diagrams/c1-context.pdf) — система в контексте внешнего мира (оператор ДЗЗ, аналитик, администратор)
-- **C2 Containers** — [`docs/diagrams/c2-container.puml`](docs/diagrams/c2-container.puml) / [PDF](docs/diagrams/c2-container.pdf) — технологические контейнеры (сервисы, БД, Kafka)
+- **C1 System Context** – [`docs/diagrams/c1-context.puml`](docs/diagrams/c1-context.puml) / [PDF](docs/diagrams/c1-context.pdf) – система в контексте внешнего мира (оператор ДЗЗ, аналитик, администратор)
+- **C2 Containers** – [`docs/diagrams/c2-container.puml`](docs/diagrams/c2-container.puml) / [PDF](docs/diagrams/c2-container.pdf) – технологические контейнеры (сервисы, БД, Kafka)
 - **[Диаграммы потоков](docs/diagrams/flow-diagrams.md)** – Sequence, State диаграммы:
   - Happy Path (успешная оплата)
   - Payment Failed (недостаточно средств)
@@ -96,7 +97,7 @@ graph TB
 | Брокер сообщений | Apache Kafka (KRaft mode) |
 | API Gateway | Spring Cloud Gateway (WebFlux) |
 | Circuit Breaker | Resilience4j |
-| Документация | Springdoc OpenAPI (springdoc-openapi-starter-webflux-ui) |
+| Документация API | Springdoc OpenAPI 2.8.17 (Swagger UI) |
 | Тестирование | JUnit 5, Testcontainers, Embedded Kafka |
 | Контейнеризация | Docker, docker-compose |
 
@@ -119,7 +120,9 @@ docker compose up -d
 После запуска будут доступны:
 - **API Gateway:** `http://localhost:8080`
 - **Kafka UI:** `http://localhost:8085`
-- **Swagger UI** – `http://localhost:8080/swagger-ui.html` (агрегированные API всех сервисов)
+- **Swagger UI:** `http://localhost:8080/swagger-ui.html` – агрегированные API всех сервисов
+  - Нажмите **Authorize**, введите `X-User-Id` (любой UUID, например `550e8400-e29b-41d4-a716-446655440000`) – заголовок будет автоматически подставляться во все запросы
+  - Для каждого эндпоинта указаны: описание, коды ответов (200/201/400/404/409/500), схемы тела запроса/ответа с примерами полей и допустимыми значениями
 
 ### Локальная разработка
 
@@ -173,6 +176,8 @@ docker compose up -d kafka kafka-ui order-service-db payment-service-db
 
 **Заголовки:** `X-User-Id: 550e8400-e29b-41d4-a716-446655440000` (обязательный)
 
+Подробные схемы запросов/ответов с примерами полей и кодами ошибок – в Swagger UI.
+
 
 ### Payment Service (платёжный сервис)
 
@@ -186,6 +191,8 @@ docker compose up -d kafka kafka-ui order-service-db payment-service-db
 
 **Заголовки:** `X-User-Id: 550e8400-e29b-41d4-a716-446655440000` (обязательный)
 
+Подробные схемы запросов/ответов с примерами полей и кодами ошибок – в Swagger UI.
+
 
 ### API Gateway (`:8080`)
 
@@ -195,7 +202,9 @@ docker compose up -d kafka kafka-ui order-service-db payment-service-db
 
 Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `failureRateThreshold=50%`, `timeoutDuration=10s`. При недоступности сервиса возвращается `503`.
 
-Документация Swagger UI: `http://localhost:8080/swagger-ui.html`
+**Swagger UI:** `http://localhost:8080/swagger-ui.html`
+- **Authorize** – кнопка для подстановки `X-User-Id` (UUID) во все запросы
+- Детальная документация каждого эндпоинта: request/response body с `@Schema` (description, example, required), error codes с описанием
 
 ## Kafka-события
 
@@ -242,8 +251,8 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 Отдельный репозиторий с автотестами (REST API + Kafka-события, Testcontainers):
 [github.com/RasmuS2024/orbmrkt-autotests](https://github.com/RasmuS2024/orbmrkt-autotests)
 
-**Account API (3 теста):** create account, top-up, balance — все happy-path.
-**Order API (3 теста):** create order, list orders, get order — все happy-path.
+**Account API (3 теста):** create account, top-up, balance – все happy-path.
+**Order API (3 теста):** create order, list orders, get order – все happy-path.
 **Cross-service (6 тестов):** полные сценарии через Gateway (happy path, insufficient funds, idempotent order, two orders, duplicate account, concurrent operations).
 
 Happy-path тесты вынесены в E2E и удалены из модульных тестов (избежание дублирования).

@@ -107,14 +107,30 @@ graph TB
 - JDK 21
 - Docker и docker-compose
 
-### Запуск через Docker
+### Запуск через Docker (локальная разработка)
 
 ```bash
 # Копировать и настроить окружение
 cp .env.example .env
 
-# Запустить все сервисы
+# Запустить все сервисы (сборка из исходников)
 docker compose up -d
+```
+
+### Production (VPS/сервер)
+
+На сервере не нужны исходники и JDK — образы тянутся из GitHub Container Registry:
+
+```bash
+# Авторизация в GHCR (если registry приватный)
+echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+
+# Запуск с latest-образами
+docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# Или с фиксированной версией
+TAG=v1.1.0 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 После запуска будут доступны:

@@ -11,6 +11,7 @@ dependencyManagement {
 
 dependencies {
     implementation("com.fasterxml.jackson.core:jackson-annotations")
+    compileOnly("io.swagger.core.v3:swagger-annotations:2.2.28")
 
     testFixturesImplementation("org.springframework.boot:spring-boot-starter-test")
     testFixturesImplementation("org.springframework.kafka:spring-kafka")

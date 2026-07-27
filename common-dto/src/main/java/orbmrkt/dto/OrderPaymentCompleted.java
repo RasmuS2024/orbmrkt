@@ -1,22 +1,29 @@
 package orbmrkt.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import java.util.UUID;
 
 @Data
+@Schema(description = "Событие успешного платежа (payment-service → order-service, Kafka)")
 public class OrderPaymentCompleted {
     @JsonProperty("event_id")
+    @Schema(description = "Идентификатор события (для дедупликации)", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
     private UUID eventId;
 
     @JsonProperty("order_id")
+    @Schema(description = "Идентификатор заказа", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
     private UUID orderId;
 
     @JsonProperty("user_id")
+    @Schema(description = "Идентификатор пользователя", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
     private String userId;
 
+    @Schema(description = "Списанная сумма в geocredits", example = "1500")
     private long amount;
 
     @JsonProperty("new_balance")
+    @Schema(description = "Новый баланс после списания", example = "8500")
     private long newBalance;
 }

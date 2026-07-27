@@ -1,0 +1,12 @@
+services:
+  order-service:
+    image: ghcr.io/rasmus2024/orbmrkt/order-service:${TAG:-latest}
+    build: !reset null
+
+  payment-service:
+    image: ghcr.io/rasmus2024/orbmrkt/payment-service:${TAG:-latest}
+    build: !reset null
+
+  api-gateway:
+    image: ghcr.io/rasmus2024/orbmrkt/api-gateway:${TAG:-latest}
+    build: !reset null

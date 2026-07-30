@@ -74,3 +74,6 @@ docs/diagrams/C4_Context.puml
 docs/diagrams/C4_Container.puml
 
 docs/diagrams/plantuml.cfg
+
+autotests/
+autotests

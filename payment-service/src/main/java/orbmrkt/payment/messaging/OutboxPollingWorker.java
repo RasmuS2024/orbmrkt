@@ -1,5 +1,6 @@
 package orbmrkt.payment.messaging;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +41,7 @@ public class OutboxPollingWorker {
 
     @Scheduled(fixedDelayString = "${outbox.polling-interval-ms}")
     @Transactional
-    public void pollAndPublish() {
+    public void pollAndPublish() throws JsonProcessingException {
         Instant now = Instant.now();
 
         List<OutboxEntity> events = outboxRepository
@@ -71,10 +72,19 @@ public class OutboxPollingWorker {
             } catch (Exception e) {
                 event.setAttempts(event.getAttempts() + 1);
                 event.setLastError(e.getMessage());
-                long delay = (long) Math.pow(2, event.getAttempts()) * 1000;
-                event.setNextRetryAt(now.plusMillis(delay));
-                log.warn("Failed to publish event: eventId={}, attempts={}, error={}",
-                        event.getEventId(), event.getAttempts(), e.getMessage());
+
+                if (event.getAttempts() >= properties.getMaxAttempts()) {
+                    log.error("Sending to DLQ: eventId={}, topic={}, error={}",
+                            event.getEventId(), event.getTopic(), e.getMessage());
+                    kafkaTemplate.send(event.getTopic() + ".dlq", event.getEventId().toString(),
+                            objectMapper.readValue(event.getPayload(), Object.class));
+                    event.setProcessed(true);
+                } else {
+                    long delay = (long) Math.pow(2, event.getAttempts()) * 1000;
+                    event.setNextRetryAt(now.plusMillis(delay));
+                    log.warn("Failed to publish event: eventId={}, attempts={}, error={}",
+                            event.getEventId(), event.getAttempts(), e.getMessage());
+                }
             }
             outboxRepository.save(event);
         }

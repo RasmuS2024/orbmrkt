@@ -10,6 +10,7 @@
 ![CI](https://github.com/RasmuS2024/orbmrkt/actions/workflows/ci.yml/badge.svg)
 
 > Полное описание цели и roadmap - в [PROJECT.md](PROJECT.md).
+> Список версий - в [CHANGELOG.md](CHANGELOG.md).
 
 ## Описание
 
@@ -101,16 +102,7 @@ graph TB
 | Тестирование | JUnit 5, Testcontainers, Embedded Kafka |
 | Контейнеризация | Docker, docker-compose |
 
-## Релизы
 
-| Версия | Дата | Описание |
-|--------|------|----------|
-| [v1.1.1](https://github.com/RasmuS2024/orbmrkt/releases/tag/v1.1.1) | 2026-07-30 | Kafka DLQ topic on outbox max attempts |
-| [v1.1.0](https://github.com/RasmuS2024/orbmrkt/releases/tag/v1.1.0) | 2026-07-30 | OpenAPI/Swagger docs + docker-compose.prod.yml |
-| [v1.0.3](https://github.com/RasmuS2024/orbmrkt/releases/tag/v1.0.3) | 2026-07-24 | CI optimisation — parallel security scan, path filters, develop trigger |
-| [v1.0.2](https://github.com/RasmuS2024/orbmrkt/releases/tag/v1.0.2) | 2026-07-24 | CI: tag-triggered docker push |
-| [v1.0.1](https://github.com/RasmuS2024/orbmrkt/releases/tag/v1.0.1) | 2026-07-23 | Replace BigDecimal price with long, documentation |
-| [v1.0.0](https://github.com/RasmuS2024/orbmrkt/releases/tag/v1.0.0) | 2026-07-21 | Initial release |
 
 ## Быстрый старт
 
@@ -247,7 +239,7 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 - Событие записывается в таблицу `outbox` в той же БД-транзакции, что и бизнес-операция
 - `OutboxPollingWorker` (с периодичностью 500 мс) выбирает неотправленные события и публикует в Kafka
 - Экспоненциальная задержка при ошибке: 2 с → 4 с → 8 с → 16 с → 32 с
-- После `max-attempts` (5) событие помечается как dead letter
+- После `max-attempts` (5) событие отправляется в Kafka DLQ топик `{topic}.dlq`
 
 ### Transactional Inbox
 - Перед обработкой события проверяется таблица `inbox` на наличие `event_id`
@@ -255,7 +247,7 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 - Обеспечивает exactly-once processing на стороне консьюмера
 
 ### Очистка
-- Ежедневно в 03:00 удаляются обработанные записи outbox старше 7 дней
+- Ежедневно в 03:00 удаляются обработанные записи outbox и inbox старше 7 дней
 
 ## Тестирование
 
@@ -335,6 +327,6 @@ Happy-path тесты вынесены в E2E и удалены из модул�
 - **Rate limiting** – на API Gateway
 
 ### 3. Фронтенд
-- **TypeSpec → OpenAPI → React + Vite**
+- **React + Vite** – простой dashboard, ручные TS-типы (эндпоинтов 6)
 - `frontend/` – React 19 + TypeScript 5 + Vite
 - Компоненты: UserSelector, AccountPanel, OrderPanel

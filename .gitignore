@@ -1,5 +1,6 @@
 .gradle
 build/
+autotests/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
@@ -74,3 +75,6 @@ docs/diagrams/C4_Context.puml
 docs/diagrams/C4_Container.puml
 
 docs/diagrams/plantuml.cfg
+
+autotests/
+autotests

@@ -93,7 +93,7 @@ graph TB
 | Фреймворк | Spring Boot 3.5.16 |
 | Сборка | Gradle 9 (Kotlin DSL) |
 | Checkstyle | 10.23.0 (Google Java Style, maxLineLength=120) |
-| SAST | Trivy (via Syft SBOM) |
+| SAST | Trivy (via Syft SBOM), Semgrep (OSS + Pro), Gitleaks |
 | База данных | PostgreSQL 16 |
 | Брокер сообщений | Apache Kafka (KRaft mode) |
 | API Gateway | Spring Cloud Gateway (WebFlux) |
@@ -248,6 +248,30 @@ Circuit Breaker для каждого сервиса: `slidingWindowSize=10`, `f
 
 ### Очистка
 - Ежедневно в 03:00 удаляются обработанные записи outbox и inbox старше 7 дней
+
+## Сканирование безопасности
+
+Подробный отчёт — [`docs/security-report.md`](docs/security-report.md).
+
+Проведено статическое сканирование репозитория тремя инструментами:
+
+| Инструмент | Что проверяет | Результат |
+|-----------|---------------|-----------|
+| **Gitleaks** | Утечки секретов (токены, пароли) в git-истории и файловой системе | 0 находок ✅ |
+| **Semgrep OSS** | SAST по правилам Java (OWASP Top 10) | 0 находок ✅ |
+| **Semgrep Pro** | Расширенный SAST: unsafe reflection, CSRF, RCE | 0 находок ✅ (после исправлений) |
+
+### Таблица триажа уязвимостей
+
+| ID | Инструмент | Находка | Критичность | TP/FP | Статус |
+|----|-----------|---------|-------------|-------|--------|
+| 1–2 | Gitleaks | Секреты в git history и workspace | – | TP (clean) | Пропусков нет |
+| 3 | Semgrep OSS | SAST default rules | – | TP (clean) | 0 findings |
+| 4 | Semgrep OSS | Parsing error в `gradlew` | Info | FP | Стандартный wrapper-скрипт |
+| 5–6 | Semgrep Pro | `@RequestMapping` без HTTP-метода (`FallbackController`) | Medium | TP | **Исправлено** → `@GetMapping` |
+| 7–8 | Semgrep Pro | `Class.forName()` в OutboxPollingWorker | High | TP | **Исправлено** → whitelist `Map<String, Class<?>>` |
+
+Все выявленные уязвимости (ID 5–8) устранены. Исходный код закрыт для OWASP Top 10, unsafe reflection и CSRF.
 
 ## Тестирование
 
